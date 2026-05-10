@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: gorskie-postgres
+    environment:
+      POSTGRES_DB: gorskie_wyprawy
+      POSTGRES_USER: gorskie
+      POSTGRES_PASSWORD: gorskie_secret
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gorskie -d gorskie_wyprawy"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    container_name: gorskie-app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/gorskie_wyprawy
+      SPRING_DATASOURCE_USERNAME: gorskie
+      SPRING_DATASOURCE_PASSWORD: gorskie_secret
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    ports:
+      - "8080:8080"
+    volumes:
+      - gpx_uploads:/app/uploads
+
+volumes:
+  postgres_data:
+  gpx_uploads:
