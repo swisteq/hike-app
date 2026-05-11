@@ -11,6 +11,8 @@ import pl.gorskie.wyprawy.model.ExpeditionDay;
 import pl.gorskie.wyprawy.model.ExpeditionEquipment;
 import pl.gorskie.wyprawy.model.ExpeditionLocation;
 import pl.gorskie.wyprawy.model.ExpeditionMember;
+import pl.gorskie.wyprawy.model.ExpeditionTransportOption;
+import pl.gorskie.wyprawy.model.ExpeditionTransportSection;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -87,6 +89,8 @@ public class ExpeditionDto {
         private List<EquipmentResponse> equipment;
         private LocalDate endDate;
         private List<DayResponse> days;
+        private boolean awaitingStatusDeclaration;
+        private List<TransportSectionResponse> transportSections;
 
         // Pełny dostęp — dla list "moje wyprawy" gdzie użytkownik jest zawsze członkiem
         public static ExpeditionResponse from(Expedition e) {
@@ -186,7 +190,16 @@ public class ExpeditionDto {
                     .equipment(e.getEquipment().stream().map(EquipmentResponse::from).toList())
                     .endDate(e.getEndDate())
                     .days(e.getDays().stream().map(DayResponse::from).toList())
+                    .awaitingStatusDeclaration(isAwaitingStatusDeclaration(e))
+                    .transportSections(e.getTransportSections().stream()
+                            .map(TransportSectionResponse::from).toList())
                     .build();
+        }
+
+        private static boolean isAwaitingStatusDeclaration(Expedition e) {
+            if (e.getStatus() != Expedition.ExpeditionStatus.ONGOING) return false;
+            LocalDate lastDay = e.getEndDate() != null ? e.getEndDate() : e.getPlannedDate();
+            return LocalDateTime.now().isAfter(lastDay.plusDays(1).atStartOfDay());
         }
 
         private static String formatDuration(Integer minutes) {
@@ -370,6 +383,8 @@ public class ExpeditionDto {
         private Integer durationMinutes;
         private String durationFormatted;
         private boolean hasTrack;
+        private String accommodationName;
+        private String accommodationUrl;
 
         public static DayResponse from(ExpeditionDay day) {
             Integer dur = day.getDurationMinutes();
@@ -386,6 +401,73 @@ public class ExpeditionDto {
                     .durationMinutes(dur)
                     .durationFormatted(dur == null ? null : (dur / 60 > 0 ? dur / 60 + "h " + dur % 60 + "min" : dur % 60 + "min"))
                     .hasTrack(day.getGpxFilePath() != null)
+                    .accommodationName(day.getAccommodationName())
+                    .accommodationUrl(day.getAccommodationUrl())
+                    .build();
+        }
+    }
+
+    @Data
+    public static class AccommodationRequest {
+        private String name;
+        private String url;
+    }
+
+    @Data
+    public static class TransportOptionRequest {
+        private String meetingPoint;
+        private pl.gorskie.wyprawy.model.ExpeditionTransportOption.TransportType transportType;
+        private String description;
+        private String url;
+        private Integer seats;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class TransportOptionResponse {
+        private Long id;
+        private String meetingPoint;
+        private String meetingPointUrl;
+        private ExpeditionTransportOption.TransportType transportType;
+        private String description;
+        private String url;
+        private Integer seats;
+        private String driverUsername;
+        private boolean approved;
+
+        public static TransportOptionResponse from(ExpeditionTransportOption opt) {
+            return TransportOptionResponse.builder()
+                    .id(opt.getId())
+                    .meetingPoint(opt.getMeetingPoint())
+                    .meetingPointUrl(opt.getMeetingPointUrl())
+                    .transportType(opt.getTransportType())
+                    .description(opt.getDescription())
+                    .url(opt.getUrl())
+                    .seats(opt.getSeats())
+                    .driverUsername(opt.getDriverUsername())
+                    .approved(opt.isApproved())
+                    .build();
+        }
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class TransportSectionResponse {
+        private Long id;
+        private ExpeditionTransportSection.SectionType sectionType;
+        private Integer dayNumber;
+        private List<TransportOptionResponse> options;
+
+        public static TransportSectionResponse from(ExpeditionTransportSection section) {
+            return TransportSectionResponse.builder()
+                    .id(section.getId())
+                    .sectionType(section.getSectionType())
+                    .dayNumber(section.getDayNumber())
+                    .options(section.getOptions().stream().map(TransportOptionResponse::from).toList())
                     .build();
         }
     }

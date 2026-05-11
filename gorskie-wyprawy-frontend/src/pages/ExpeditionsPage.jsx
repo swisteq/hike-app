@@ -3,18 +3,20 @@ import { Link } from 'react-router-dom';
 import { getMyExpeditions } from '../api/client';
 
 const STATUS_LABELS = {
-  PLANNED: { label: 'Planowana', color: 'bg-blue-50 text-blue-700 border-blue-200' },
-  ONGOING: { label: 'W trakcie', color: 'bg-green-50 text-green-700 border-green-200' },
-  COMPLETED: { label: 'Zakończona', color: 'bg-gray-50 text-gray-600 border-gray-200' },
-  CANCELLED: { label: 'Odwołana', color: 'bg-red-50 text-red-600 border-red-200' },
+  PLANNED:    { label: 'Planowana',       color: 'bg-blue-50 text-blue-700 border-blue-200' },
+  ONGOING:    { label: 'W trakcie',       color: 'bg-green-50 text-green-700 border-green-200' },
+  COMPLETED:  { label: 'Zakończona',      color: 'bg-gray-50 text-gray-600 border-gray-200' },
+  CANCELLED:  { label: 'Odwołana',        color: 'bg-red-50 text-red-600 border-red-200' },
+  UNREALIZED: { label: 'Niezrealizowana', color: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
 };
 
 const STATUS_FILTERS = [
-  { value: '',          label: 'Wszystkie' },
-  { value: 'PLANNED',   label: 'Planowane' },
-  { value: 'ONGOING',   label: 'W trakcie' },
-  { value: 'COMPLETED', label: 'Zakończone' },
-  { value: 'CANCELLED', label: 'Odwołane' },
+  { value: '',             label: 'Wszystkie' },
+  { value: 'PLANNED',      label: 'Planowane' },
+  { value: 'ONGOING',      label: 'W trakcie' },
+  { value: 'COMPLETED',    label: 'Zakończone' },
+  { value: 'CANCELLED',    label: 'Odwołane' },
+  { value: 'UNREALIZED',   label: 'Niezrealizowane' },
 ];
 
 export default function ExpeditionsPage() {

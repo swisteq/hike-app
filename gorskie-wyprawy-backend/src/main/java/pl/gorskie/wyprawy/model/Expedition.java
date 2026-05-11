@@ -146,6 +146,11 @@ public class Expedition {
     @ToString.Exclude
     private List<ExpeditionDay> days = new ArrayList<>();
 
+    @OneToMany(mappedBy = "expedition", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    @ToString.Exclude
+    private List<ExpeditionTransportSection> transportSections = new ArrayList<>();
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
@@ -156,6 +161,10 @@ public class Expedition {
     @Builder.Default
     private JoinMode joinMode = JoinMode.AUTO;
 
+    @Column(name = "status_declaration_notified")
+    @Builder.Default
+    private Boolean statusDeclarationNotified = Boolean.FALSE;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -165,13 +174,14 @@ public class Expedition {
     private LocalDateTime updatedAt;
 
     public enum ExpeditionStatus {
-        PLANNED, ONGOING, COMPLETED, CANCELLED
+        PLANNED, ONGOING, COMPLETED, CANCELLED, UNREALIZED
     }
 
     public enum Visibility {
-        PUBLIC,        // widoczna dla wszystkich
-        FRIENDS_ONLY,  // widoczna tylko dla znajomych organizatora
-        GROUPS_ONLY    // widoczna tylko dla członków wspólnych grup
+        PUBLIC,             // widoczna dla wszystkich
+        FRIENDS_ONLY,       // widoczna tylko dla znajomych organizatora
+        GROUPS_ONLY,        // widoczna tylko dla członków wspólnych grup
+        FRIENDS_AND_GROUPS  // widoczna dla znajomych i wspólnych grup
     }
 
     public enum JoinMode {

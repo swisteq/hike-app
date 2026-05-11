@@ -14,18 +14,35 @@ function makeLocationIcon(featureClass) {
     iconAnchor: [6, 6],
   });
 }
+
+function makeStartIcon() {
+  return L.divIcon({
+    className: '',
+    html: `<div style="width:14px;height:14px;border-radius:50%;background:#16a34a;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.5)"></div>`,
+    iconAnchor: [7, 7],
+  });
+}
+
+function makeEndIcon() {
+  return L.divIcon({
+    className: '',
+    html: `<div style="width:14px;height:14px;border-radius:50%;background:#dc2626;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.5)"></div>`,
+    iconAnchor: [7, 7],
+  });
+}
 import {
   getExpedition, deleteExpedition, inviteToExpedition,
   respondToInvite, addComment, updateExpedition, getExpeditionTrack,
   pinComment, generateInviteLink, removeMember, leaveExpedition,
-  joinExpedition, approveMember, searchUsers, cancelExpedition,
+  joinExpedition, approveMember, searchUsers, cancelExpedition, markExpeditionCompleted, markExpeditionUnrealized,
   updateMemberRole, updateExpeditionEquipment, changeExpeditionTrail, getAuditLogs,
-  addDayTrail, getDayTrack,
+  addDayTrail, getDayTrack, setDayAccommodation, removeDayAccommodation,
+  addTransportOption, updateTransportOption, deleteTransportOption, approveTransportOption, resolvePlaceName,
 } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 
-const STATUS_OPTIONS = ['PLANNED', 'ONGOING', 'COMPLETED', 'CANCELLED'];
-const STATUS_LABELS = { PLANNED: 'Planowana', ONGOING: 'W trakcie', COMPLETED: 'Zakończona', CANCELLED: 'Odwołana' };
+const STATUS_OPTIONS = ['PLANNED', 'ONGOING', 'COMPLETED', 'CANCELLED', 'UNREALIZED'];
+const STATUS_LABELS = { PLANNED: 'Planowana', ONGOING: 'W trakcie', COMPLETED: 'Zakończona', CANCELLED: 'Odwołana', UNREALIZED: 'Niezrealizowana' };
 
 const EQUIPMENT_ITEMS = [
   { value: 'RACZKI',                   label: 'Raczki' },
@@ -270,6 +287,279 @@ function InviteSearchInput({ expeditionId, alreadyMemberIds, onInvited }) {
   );
 }
 
+const TRANSPORT_TYPE_LABELS = { CAR: 'Auto', PUBLIC_TRANSPORT: 'Komunikacja' };
+const TRANSPORT_TYPES = ['CAR', 'PUBLIC_TRANSPORT'];
+const EMPTY_OPTION = { meetingPoint: '', transportType: null, description: '', url: '', seats: '' };
+
+function TypeSelector({ value, onChange }) {
+  return (
+    <div className="flex gap-1.5">
+      {TRANSPORT_TYPES.map(t => (
+        <button key={t} type="button" onClick={() => onChange(t)}
+          className={`text-xs px-2.5 py-1 rounded-lg border transition-colors ${
+            value === t
+              ? 'bg-mountain-600 text-white border-mountain-600'
+              : 'text-gray-500 border-gray-200 hover:border-gray-300 hover:text-gray-700'
+          }`}>
+          {TRANSPORT_TYPE_LABELS[t]}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function TypeBadge({ type, block }) {
+  if (!type) return null;
+  if (block) return (
+    <div className="text-sm px-3 py-1.5 rounded-lg border font-medium bg-blue-50 text-blue-700 border-blue-200">
+      {TRANSPORT_TYPE_LABELS[type]}
+    </div>
+  );
+  return (
+    <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded shrink-0">
+      {TRANSPORT_TYPE_LABELS[type]}
+    </span>
+  );
+}
+
+const isGoogleMapsUrl = (val) => /https?:\/\/maps\.app\.goo\.gl/.test(val);
+
+function OptionForm({ input, setInput, onSave, onCancel, saveLabel, loading }) {
+  const [resolving, setResolving] = useState(false);
+  const [resolvedPreview, setResolvedPreview] = useState(null);
+
+  useEffect(() => {
+    if (isGoogleMapsUrl(input.meetingPoint)) {
+      setResolving(true);
+      resolvePlaceName(input.meetingPoint)
+        .then(({ data }) => setResolvedPreview(data.name ? { name: data.name, url: input.meetingPoint } : null))
+        .catch(() => setResolvedPreview(null))
+        .finally(() => setResolving(false));
+    } else {
+      setResolvedPreview(null);
+    }
+  }, []);
+
+  const handleMeetingPointPaste = async (e) => {
+    const pasted = e.clipboardData.getData('text');
+    if (!isGoogleMapsUrl(pasted)) return;
+    setResolving(true);
+    setResolvedPreview(null);
+    try {
+      const { data } = await resolvePlaceName(pasted);
+      if (data.name) setResolvedPreview({ name: data.name, url: pasted });
+    } catch {}
+    finally { setResolving(false); }
+  };
+
+  return (
+    <div className="space-y-1.5">
+      <div>
+        <input type="text" value={input.meetingPoint}
+          onChange={e => { setInput(p => ({ ...p, meetingPoint: e.target.value })); if (!isGoogleMapsUrl(e.target.value)) setResolvedPreview(null); }}
+          onPaste={handleMeetingPointPaste}
+          placeholder="Miejsce zbiórki — nazwa lub link Google Maps"
+          className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-mountain-400" />
+        {resolving && <p className="text-xs text-gray-400 mt-0.5">Pobieranie nazwy miejsca...</p>}
+        {resolvedPreview && (
+          <p className="text-xs mt-0.5 text-gray-500">
+            <a href={resolvedPreview.url} target="_blank" rel="noopener noreferrer"
+              className="text-mountain-600 hover:underline">{resolvedPreview.name}</a>
+          </p>
+        )}
+      </div>
+      <TypeSelector value={input.transportType}
+        onChange={v => setInput(p => ({ ...p, transportType: v, seats: v === 'CAR' ? p.seats : '' }))} />
+      {!input.transportType && <p className="text-xs text-red-400">Wybór rodzaju transportu jest wymagany</p>}
+      {input.transportType === 'CAR' && (
+        <div className="flex items-center gap-2">
+          <input type="number" min="1" max="50" value={input.seats}
+            onChange={e => setInput(p => ({ ...p, seats: e.target.value }))}
+            placeholder="Liczba miejsc"
+            className="w-36 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-mountain-400" />
+          <span className="text-xs text-gray-400">Kierowca: Ty</span>
+        </div>
+      )}
+      <input type="text" value={input.description}
+        onChange={e => setInput(p => ({ ...p, description: e.target.value }))}
+        placeholder={input.transportType === 'CAR' ? 'np. Kraków - Kuźnice' : 'np. Bus Kraków → Zakopane, linia 304, godz. 8:30'}
+        className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-mountain-400" />
+      {input.transportType !== 'CAR' && (
+        <input type="text" value={input.url}
+          onChange={e => setInput(p => ({ ...p, url: e.target.value }))}
+          placeholder="Link do rezerwacji (opcjonalnie)"
+          className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-mountain-400" />
+      )}
+      <div className="flex gap-2">
+        <button onClick={onSave}
+          disabled={loading || !input.description.trim() || !input.transportType || (input.transportType === 'CAR' && !input.seats)}
+          className="text-xs bg-mountain-600 hover:bg-mountain-700 text-white px-3 py-1.5 rounded-lg disabled:opacity-50 transition-colors">
+          {loading ? '...' : saveLabel}
+        </button>
+        <button onClick={onCancel} className="text-xs text-gray-400 hover:text-gray-600">Anuluj</button>
+      </div>
+    </div>
+  );
+}
+
+// ---- Podsekcja transportu ----
+function TransportSectionBlock({ type, label, section, canAdd, canEdit, expeditionId, onRefresh }) {
+  const [addingOption, setAddingOption] = useState(false);
+  const [optionInput, setOptionInput] = useState(EMPTY_OPTION);
+  const [editingOptionId, setEditingOptionId] = useState(null);
+  const [editingOptionInput, setEditingOptionInput] = useState(EMPTY_OPTION);
+  const [loading, setLoading] = useState(false);
+
+  const hasContent = section?.options?.length > 0;
+  if (!canAdd && !canEdit && !hasContent) return null;
+
+  const handleApprove = async (optionId) => {
+    try { await approveTransportOption(expeditionId, optionId); onRefresh(); }
+    catch { alert('Błąd zatwierdzania formy transportu'); }
+  };
+
+  const startAdd = () => { setOptionInput(EMPTY_OPTION); setAddingOption(true); };
+  const cancelAdd = () => { setAddingOption(false); setOptionInput(EMPTY_OPTION); };
+
+  const handleAdd = async () => {
+    if (!optionInput.description.trim()) return;
+    setLoading(true);
+    try {
+      await addTransportOption(expeditionId, type, {
+        meetingPoint: optionInput.meetingPoint.trim() || null,
+        transportType: optionInput.transportType,
+        description: optionInput.description.trim(),
+        url: optionInput.url.trim() || null,
+        seats: optionInput.seats ? parseInt(optionInput.seats) : null,
+      });
+      cancelAdd(); onRefresh();
+    } catch { alert('Błąd dodawania formy transportu'); }
+    finally { setLoading(false); }
+  };
+
+  const startEdit = (opt) => {
+    setEditingOptionId(opt.id);
+    setEditingOptionInput({
+      meetingPoint: opt.meetingPointUrl || opt.meetingPoint || '',
+      transportType: opt.transportType || null,
+      description: opt.description,
+      url: opt.url || '',
+      seats: opt.seats || '',
+    });
+  };
+  const cancelEdit = () => { setEditingOptionId(null); setEditingOptionInput(EMPTY_OPTION); };
+
+  const handleUpdate = async (optionId) => {
+    if (!editingOptionInput.description.trim()) return;
+    setLoading(true);
+    try {
+      await updateTransportOption(expeditionId, optionId, {
+        meetingPoint: editingOptionInput.meetingPoint.trim() || null,
+        transportType: editingOptionInput.transportType,
+        description: editingOptionInput.description.trim(),
+        url: editingOptionInput.url.trim() || null,
+        seats: editingOptionInput.seats ? parseInt(editingOptionInput.seats) : null,
+      });
+      cancelEdit(); onRefresh();
+    } catch { alert('Błąd aktualizacji formy transportu'); }
+    finally { setLoading(false); }
+  };
+
+  const handleDelete = async (optionId) => {
+    if (!window.confirm('Usunąć tę formę transportu?')) return;
+    try { await deleteTransportOption(expeditionId, optionId); onRefresh(); }
+    catch { alert('Błąd usuwania formy transportu'); }
+  };
+
+  return (
+    <div className="border border-gray-300 rounded-lg p-3">
+      <div className="font-bold text-sm text-gray-700 mb-2">{label}</div>
+      {editingOptionId ? (
+        <div className="mt-1">
+          {section?.options?.map(opt => opt.id === editingOptionId ? (
+            <OptionForm key={opt.id} input={editingOptionInput} setInput={setEditingOptionInput}
+              onSave={() => handleUpdate(opt.id)} onCancel={cancelEdit} saveLabel="Zapisz" loading={loading} />
+          ) : null)}
+        </div>
+      ) : (
+        <>
+          {section?.options?.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 mt-1">
+              {section.options.map(opt => (
+                <div key={opt.id} className="border border-gray-300 rounded-lg p-2.5 text-sm space-y-1">
+                  <TypeBadge type={opt.transportType} block />
+                  {opt.meetingPoint && (
+                    <div className="text-xs text-gray-500">
+                      {opt.meetingPointUrl ? (
+                        <a href={opt.meetingPointUrl} target="_blank" rel="noopener noreferrer"
+                          className="text-mountain-600 hover:underline">{opt.meetingPoint}</a>
+                      ) : opt.meetingPoint}
+                    </div>
+                  )}
+                  <div>
+                    {opt.url ? (
+                      <a href={opt.url} target="_blank" rel="noopener noreferrer"
+                        className="text-mountain-600 hover:underline">{opt.description}</a>
+                    ) : (
+                      <span className="text-gray-700">{opt.description}</span>
+                    )}
+                  </div>
+                  {opt.transportType === 'CAR' && (opt.seats || opt.driverUsername) && (
+                    <div className="text-xs text-gray-500 flex gap-3">
+                      {opt.seats && <span>Miejsca: {opt.seats}</span>}
+                      {opt.driverUsername && <span>Kierowca: {opt.driverUsername}</span>}
+                    </div>
+                  )}
+                  {!opt.approved && (
+                    <span className="text-xs text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">
+                      Oczekuje na zatwierdzenie
+                    </span>
+                  )}
+                  {(canEdit || canAdd) && (
+                    <div className="flex gap-1.5 pt-0.5 flex-wrap">
+                      {canEdit && !opt.approved && (
+                        <button onClick={() => handleApprove(opt.id)}
+                          className="text-xs text-green-600 hover:text-green-800 border border-green-200 hover:border-green-400 px-2 py-0.5 rounded-lg transition-colors">
+                          Zatwierdź
+                        </button>
+                      )}
+                      {canEdit && (
+                        <>
+                          <button onClick={() => startEdit(opt)}
+                            className="text-xs text-gray-500 hover:text-gray-700 border border-gray-200 hover:border-gray-300 px-2 py-0.5 rounded-lg transition-colors">
+                            Edytuj
+                          </button>
+                          <button onClick={() => handleDelete(opt.id)}
+                            className="text-xs text-gray-500 hover:text-red-500 border border-gray-200 hover:border-red-300 px-2 py-0.5 rounded-lg transition-colors">
+                            Usuń
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+          {(canAdd || canEdit) && (
+            addingOption ? (
+              <div className="mt-2">
+                <OptionForm input={optionInput} setInput={setOptionInput}
+                  onSave={handleAdd} onCancel={cancelAdd} saveLabel="Dodaj" loading={loading} />
+              </div>
+            ) : (
+              <button onClick={startAdd}
+                className="mt-2 text-xs text-gray-500 hover:text-gray-700 px-2.5 py-1 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors">
+                Dodaj
+              </button>
+            )
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 // ---- Główna strona ----
 export default function ExpeditionDetailPage() {
   const { id } = useParams();
@@ -291,6 +581,14 @@ export default function ExpeditionDetailPage() {
   const [savingEquipment, setSavingEquipment] = useState(false);
   const [equipmentError, setEquipmentError] = useState('');
 
+  const [accommodationForm, setAccommodationForm] = useState(null); // null | dayNumber
+  const [accommodationInput, setAccommodationInput] = useState('');
+  const [accommodationLoading, setAccommodationLoading] = useState(false);
+
+  const [transportExpanded, setTransportExpanded] = useState(true);
+  const [addedDayNumbers, setAddedDayNumbers] = useState(new Set());
+  const [managingMembers, setManagingMembers] = useState(false);
+  const [changingRoleFor, setChangingRoleFor] = useState(null);
   const [changingTrail, setChangingTrail] = useState(false);
   const [changingTrailDay, setChangingTrailDay] = useState(null); // null = main, int = day number
   const [trailFile, setTrailFile] = useState(null);
@@ -400,6 +698,7 @@ export default function ExpeditionDetailPage() {
     }
   };
 
+
   const handleCancel = async () => {
     if (!window.confirm('Czy na pewno chcesz odwołać tę wyprawę?')) return;
     try {
@@ -407,6 +706,26 @@ export default function ExpeditionDetailPage() {
       refresh();
     } catch (err) {
       alert(err.response?.data?.message || 'Błąd odwoływania wyprawy');
+    }
+  };
+
+  const handleMarkCompleted = async () => {
+    if (!window.confirm('Czy na pewno chcesz oznaczyć tę wyprawę jako zakończoną?')) return;
+    try {
+      await markExpeditionCompleted(id);
+      refresh();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Błąd zmiany statusu wyprawy');
+    }
+  };
+
+  const handleMarkUnrealized = async () => {
+    if (!window.confirm('Czy na pewno chcesz oznaczyć tę wyprawę jako niezrealizowaną?')) return;
+    try {
+      await markExpeditionUnrealized(id);
+      refresh();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Błąd zmiany statusu wyprawy');
     }
   };
 
@@ -510,6 +829,22 @@ export default function ExpeditionDetailPage() {
                 Odwołaj
               </button>
             )}
+            {isOrganizer && expedition.awaitingStatusDeclaration && (
+              <>
+                <button
+                  onClick={handleMarkCompleted}
+                  className="text-sm text-green-600 hover:text-green-800 border border-green-200 hover:border-green-400 px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  Zakończona
+                </button>
+                <button
+                  onClick={handleMarkUnrealized}
+                  className="text-sm text-yellow-600 hover:text-yellow-800 border border-yellow-200 hover:border-yellow-400 px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  Niezrealizowana
+                </button>
+              </>
+            )}
             {isOrganizer && (
               <button
                 onClick={handleDelete}
@@ -544,10 +879,12 @@ export default function ExpeditionDetailPage() {
               )}
             </span>
           </div>
-          <div>
-            <span className="text-gray-500">Trasa:</span>
-            <span className="ml-2 font-medium">{expedition.routeLabel || expedition.trailName || expedition.trail?.name || '—'}</span>
-          </div>
+          {!expedition.days?.length && (
+            <div>
+              <span className="text-gray-500">Trasa:</span>
+              <span className="ml-2 font-medium">{expedition.routeLabel || expedition.trailName || expedition.trail?.name || '—'}</span>
+            </div>
+          )}
         </div>
 
         {(expedition.distanceKm || expedition.elevationGainM || expedition.durationFormatted) && (
@@ -559,6 +896,66 @@ export default function ExpeditionDetailPage() {
             {expedition.durationFormatted && <span>Czas: {expedition.durationFormatted}</span>}
           </div>
         )}
+
+        {/* Transport */}
+        {(() => {
+          const canEditTransport = isOrganizer || viewerRole === 'LOGISTYK';
+          const canAddTransport = canEditTransport || ['MEMBER', 'NAWIGATOR'].includes(viewerRole);
+          const sections = expedition.transportSections || [];
+          const findSection = (sType, dayNum = null) =>
+            sections.find(s => s.sectionType === sType && (s.dayNumber ?? null) === dayNum) || null;
+          const hasAnyContent = sections.some(s => s.options?.length > 0);
+          if (!canAddTransport && !hasAnyContent) return null;
+          const sectionProps = { canAdd: canAddTransport, canEdit: canEditTransport, expeditionId: id, onRefresh: refresh };
+
+          // Dni pośrednie: wszystkie poza ostatnim
+          const allInterDays = expedition.days?.length > 1 ? expedition.days.slice(0, -1) : [];
+          // Pokaż dzień jeśli ma już opcje w backendzie LUB użytkownik go dodał ręcznie
+          const daysWithContent = new Set(
+            sections.filter(s => s.sectionType === 'DAY_TRANSITION' && s.options?.length > 0)
+                    .map(s => s.dayNumber)
+          );
+          const visibleDayNumbers = new Set([...daysWithContent, ...addedDayNumbers]);
+          const visibleDays = allInterDays.filter(d => visibleDayNumbers.has(d.dayNumber));
+          const availableDays = allInterDays.filter(d => !visibleDayNumbers.has(d.dayNumber));
+
+          return (
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              <button
+                onClick={() => setTransportExpanded(v => !v)}
+                className="flex items-center justify-between w-full text-left mb-2"
+              >
+                <h2 className="font-semibold text-gray-800">Transport</h2>
+                <span className="text-xs text-gray-400">{transportExpanded ? 'zwiń' : 'rozwiń'}</span>
+              </button>
+              {transportExpanded && (
+                <div className="space-y-2">
+                  <TransportSectionBlock {...sectionProps} type="arrival" label="Dojazd"
+                    section={findSection('ARRIVAL')} />
+                  {visibleDays.map(day => (
+                    <TransportSectionBlock key={day.dayNumber} {...sectionProps}
+                      type={`day-${day.dayNumber}`}
+                      label={`Dzień ${day.dayNumber}`}
+                      section={findSection('DAY_TRANSITION', day.dayNumber)} />
+                  ))}
+                  <TransportSectionBlock {...sectionProps} type="return" label="Powrót"
+                    section={findSection('RETURN')} />
+                  {canAddTransport && availableDays.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {availableDays.map(day => (
+                        <button key={day.dayNumber} type="button"
+                          onClick={() => setAddedDayNumbers(prev => new Set([...prev, day.dayNumber]))}
+                          className="text-xs text-gray-500 hover:text-gray-700 border border-dashed border-gray-300 hover:border-gray-400 px-2.5 py-1 rounded-lg transition-colors">
+                          + Dzień {day.dayNumber}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {expedition.description && (
           <p className="text-gray-600 text-sm mt-3 leading-relaxed">{expedition.description}</p>
@@ -760,6 +1157,8 @@ export default function ExpeditionDetailPage() {
                 {currentDay.trailName && <span className="font-medium text-gray-700">{currentDay.trailName}</span>}
                 {currentDay.distanceKm && <span>Dystans: {currentDay.distanceKm} km</span>}
                 {currentDay.elevationGainM && <span>Podejście: +{currentDay.elevationGainM} m</span>}
+                {currentDay.elevationLossM && <span>Zejście: -{currentDay.elevationLossM} m</span>}
+                {currentDay.maxElevationM && <span>Maks. wys.: {currentDay.maxElevationM} m n.p.m.</span>}
                 {currentDay.durationFormatted && <span>Czas: {currentDay.durationFormatted}</span>}
               </div>
             )}
@@ -773,8 +1172,8 @@ export default function ExpeditionDetailPage() {
                       attribution='© <a href="https://openstreetmap.org">OpenStreetMap</a>'
                     />
                     <Polyline positions={pts} color="#1d6a3a" weight={3} opacity={0.85} />
-                    <Marker position={pts[0]}><Popup>Start trasy</Popup></Marker>
-                    <Marker position={pts[pts.length - 1]}><Popup>Koniec trasy</Popup></Marker>
+                    <Marker position={pts[0]} icon={makeStartIcon()}><Popup>Start trasy</Popup></Marker>
+                    <Marker position={pts[pts.length - 1]} icon={makeEndIcon()}><Popup>Koniec trasy</Popup></Marker>
                     {dayLocs.map(loc => (
                       <Marker
                         key={loc.id}
@@ -832,6 +1231,95 @@ export default function ExpeditionDetailPage() {
                 </div>
               </div>
             )}
+
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="font-semibold text-gray-800">Nocleg</h2>
+                {(isOrganizer || viewerRole === 'LOGISTYK') && accommodationForm !== selectedDayNumber && (
+                  currentDay?.accommodationName ? (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => { setAccommodationForm(selectedDayNumber); setAccommodationInput(currentDay.accommodationUrl || currentDay.accommodationName || ''); }}
+                        className="text-xs text-gray-500 hover:text-gray-700 border border-gray-200 hover:border-gray-300 px-2.5 py-1 rounded-lg transition-colors"
+                      >
+                        Edytuj
+                      </button>
+                      <button
+                        onClick={async () => {
+                          if (!window.confirm('Usunąć nocleg?')) return;
+                          try { await removeDayAccommodation(id, selectedDayNumber); refresh(); } catch {}
+                        }}
+                        className="text-xs text-gray-500 hover:text-red-500 border border-gray-200 hover:border-red-300 px-2.5 py-1 rounded-lg transition-colors"
+                      >
+                        Usuń
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => { setAccommodationForm(selectedDayNumber); setAccommodationInput(''); }}
+                      className="text-xs text-gray-500 hover:text-gray-700 border border-gray-200 hover:border-gray-300 px-2.5 py-1 rounded-lg transition-colors"
+                    >
+                      Dodaj nocleg
+                    </button>
+                  )
+                )}
+              </div>
+
+              {accommodationForm === selectedDayNumber ? (
+                <div className="flex gap-2 items-center">
+                  <input
+                    type="text"
+                    value={accommodationInput}
+                    onChange={e => setAccommodationInput(e.target.value)}
+                    placeholder="Nazwa miejsca lub link Google Maps / Booking.com"
+                    className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-mountain-400"
+                    autoFocus
+                  />
+                  <button
+                    disabled={accommodationLoading || !accommodationInput.trim()}
+                    onClick={async () => {
+                      setAccommodationLoading(true);
+                      try {
+                        const val = accommodationInput.trim();
+                        await setDayAccommodation(id, selectedDayNumber, val.startsWith('http') ? { url: val } : { name: val });
+                        setAccommodationForm(null);
+                        setAccommodationInput('');
+                        refresh();
+                      } catch {
+                        alert('Błąd zapisywania noclegu');
+                      } finally {
+                        setAccommodationLoading(false);
+                      }
+                    }}
+                    className="text-sm bg-mountain-600 hover:bg-mountain-700 text-white px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 shrink-0"
+                  >
+                    {accommodationLoading ? 'Zapisywanie...' : 'Zapisz'}
+                  </button>
+                  <button
+                    onClick={() => { setAccommodationForm(null); setAccommodationInput(''); }}
+                    className="text-sm text-gray-400 hover:text-gray-600 shrink-0"
+                  >
+                    Anuluj
+                  </button>
+                </div>
+              ) : currentDay?.accommodationName ? (
+                currentDay.accommodationUrl ? (
+                  <a
+                    href={currentDay.accommodationUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-mountain-600 hover:text-mountain-800 hover:underline"
+                  >
+                    {currentDay.accommodationName}
+                  </a>
+                ) : (
+                  <span className="text-sm text-gray-700">{currentDay.accommodationName}</span>
+                )
+              ) : (
+                <p className="text-sm text-gray-400">Brak informacji o noclegu.</p>
+              )}
+            </div>
+
           </div>
         );
       })()}
@@ -857,8 +1345,8 @@ export default function ExpeditionDetailPage() {
                 attribution='© <a href="https://openstreetmap.org">OpenStreetMap</a>'
               />
               <Polyline positions={trackPoints} color="#1d6a3a" weight={3} opacity={0.85} />
-              <Marker position={trackPoints[0]}><Popup>Start trasy</Popup></Marker>
-              <Marker position={trackPoints[trackPoints.length - 1]}><Popup>Koniec trasy</Popup></Marker>
+              <Marker position={trackPoints[0]} icon={makeStartIcon()}><Popup>Start trasy</Popup></Marker>
+              <Marker position={trackPoints[trackPoints.length - 1]} icon={makeEndIcon()}><Popup>Koniec trasy</Popup></Marker>
               {expedition.locations?.map(loc => (
                 <Marker
                   key={loc.id}
@@ -1044,9 +1532,19 @@ export default function ExpeditionDetailPage() {
 
           {/* Uczestnicy + zaproszenia */}
           <div className="bg-white rounded-xl border border-gray-200 p-5">
-            <h2 className="font-semibold text-gray-800 mb-3">
-              Uczestnicy ({(expedition.members?.length ?? 0) + 1})
-            </h2>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-semibold text-gray-800">
+                Uczestnicy ({(expedition.members?.length ?? 0) + 1})
+              </h2>
+              {isOrganizer && (
+                <button
+                  onClick={() => { setManagingMembers(true); setChangingRoleFor(null); }}
+                  className="text-xs text-gray-500 hover:text-gray-700 border border-gray-200 hover:border-gray-300 px-2.5 py-1 rounded-lg transition-colors"
+                >
+                  Zarządzaj
+                </button>
+              )}
+            </div>
 
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm">
@@ -1062,50 +1560,16 @@ export default function ExpeditionDetailPage() {
                     {m.user?.name?.[0]}
                   </div>
                   <span className="truncate flex-1">{m.user?.name}</span>
-                  {m.status === 'ACCEPTED' && isOrganizer ? (
-                    <select
-                      value={m.memberRole ?? 'MEMBER'}
-                      onChange={async e => {
-                        try {
-                          await updateMemberRole(id, m.user?.id, e.target.value);
-                          refresh();
-                        } catch {}
-                      }}
-                      className="text-xs border border-gray-200 rounded px-1 py-0.5 text-gray-600 bg-white shrink-0"
-                    >
-                      <option value="MEMBER">uczestnik</option>
-                      <option value="NAWIGATOR">nawigator</option>
-                      <option value="LOGISTYK">logistyk</option>
-                    </select>
-                  ) : (
-                    <span className={`text-xs shrink-0 ${
-                      m.status === 'ACCEPTED' ? 'text-green-600' :
-                      m.status === 'DECLINED' ? 'text-red-500' :
-                      m.status === 'PENDING'  ? 'text-blue-500' : 'text-yellow-600'
-                    }`}>
-                      {m.status === 'ACCEPTED'
-                        ? { MEMBER: 'uczestnik', NAWIGATOR: 'nawigator', LOGISTYK: 'logistyk' }[m.memberRole ?? 'MEMBER'] ?? 'uczestnik'
-                        : m.status === 'DECLINED' ? 'odrzucony'
-                        : m.status === 'PENDING'  ? 'oczekuje' : 'zaproszony'}
-                    </span>
-                  )}
-                  {isOrganizer && m.status === 'PENDING' && (
-                    <button
-                      onClick={() => handleApprove(m.user?.id)}
-                      className="text-green-600 hover:text-green-800 text-xs shrink-0 font-medium"
-                      title="Zatwierdź"
-                    >
-                      Akceptuj
-                    </button>
-                  )}
-                  {isOrganizer && (
-                    <button
-                      onClick={() => handleRemoveMember(m.user?.id, m.user?.name)}
-                      className="text-gray-400 hover:text-red-500 transition-colors text-xs shrink-0"
-                    >
-                      Usuń
-                    </button>
-                  )}
+                  <span className={`text-xs shrink-0 ${
+                    m.status === 'ACCEPTED' ? 'text-green-600' :
+                    m.status === 'DECLINED' ? 'text-red-500' :
+                    m.status === 'PENDING'  ? 'text-blue-500' : 'text-yellow-600'
+                  }`}>
+                    {m.status === 'ACCEPTED'
+                      ? { MEMBER: 'uczestnik', NAWIGATOR: 'nawigator', LOGISTYK: 'logistyk' }[m.memberRole ?? 'MEMBER'] ?? 'uczestnik'
+                      : m.status === 'DECLINED' ? 'odrzucony'
+                      : m.status === 'PENDING'  ? 'oczekuje' : 'zaproszony'}
+                  </span>
                 </div>
               ))}
 
@@ -1231,6 +1695,101 @@ export default function ExpeditionDetailPage() {
       {!hasFullAccess && (
         <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 text-center text-gray-500 text-sm">
           Lista uczestników i czat są dostępne po dołączeniu do wyprawy.
+        </div>
+      )}
+
+      {/* Modal zarządzania uczestnikami */}
+      {managingMembers && (
+        <div
+          className="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+          onClick={e => { if (e.target === e.currentTarget) { setManagingMembers(false); setChangingRoleFor(null); } }}
+        >
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-gray-900 text-lg">Zarządzaj uczestnikami</h3>
+              <button
+                onClick={() => { setManagingMembers(false); setChangingRoleFor(null); }}
+                className="text-gray-400 hover:text-gray-600 text-xl leading-none"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-3 max-h-96 overflow-y-auto">
+              {expedition.members?.map(m => (
+                <div key={m.id} className="flex items-center gap-2 text-sm py-1 border-b border-gray-50 last:border-0">
+                  <div className="w-7 h-7 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center text-xs font-medium shrink-0">
+                    {m.user?.name?.[0]}
+                  </div>
+                  <span className="truncate flex-1 font-medium">{m.user?.name}</span>
+
+                  {m.status === 'ACCEPTED' && (
+                    <>
+                      {changingRoleFor === m.id ? (
+                        <div className="flex items-center gap-1 shrink-0">
+                          {[['MEMBER','uczestnik'],['NAWIGATOR','nawigator'],['LOGISTYK','logistyk']].map(([val, label]) => (
+                            <button
+                              key={val}
+                              onClick={async () => {
+                                try { await updateMemberRole(id, m.user?.id, val); refresh(); } catch {}
+                                setChangingRoleFor(null);
+                              }}
+                              className={`text-xs px-1.5 py-0.5 rounded border transition-colors ${
+                                (m.memberRole ?? 'MEMBER') === val
+                                  ? 'bg-mountain-600 text-white border-mountain-600'
+                                  : 'text-gray-600 border-gray-200 hover:border-gray-400'
+                              }`}
+                            >
+                              {label}
+                            </button>
+                          ))}
+                          <button onClick={() => setChangingRoleFor(null)} className="text-xs text-gray-400 hover:text-gray-600 px-1">✕</button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className="text-xs text-green-600">
+                            {{ MEMBER: 'uczestnik', NAWIGATOR: 'nawigator', LOGISTYK: 'logistyk' }[m.memberRole ?? 'MEMBER']}
+                          </span>
+                          <button
+                            onClick={() => setChangingRoleFor(m.id)}
+                            className="text-xs text-gray-400 hover:text-gray-600 border border-gray-200 hover:border-gray-300 px-1.5 py-0.5 rounded transition-colors"
+                          >
+                            Zmień rolę
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {m.status === 'PENDING' && (
+                    <button
+                      onClick={async () => { await handleApprove(m.user?.id); }}
+                      className="text-xs text-green-600 hover:text-green-800 border border-green-200 hover:border-green-400 px-1.5 py-0.5 rounded transition-colors shrink-0"
+                    >
+                      Akceptuj
+                    </button>
+                  )}
+
+                  {m.status !== 'ACCEPTED' && m.status !== 'PENDING' && (
+                    <span className={`text-xs shrink-0 ${m.status === 'DECLINED' ? 'text-red-400' : 'text-yellow-500'}`}>
+                      {m.status === 'DECLINED' ? 'odrzucony' : 'zaproszony'}
+                    </span>
+                  )}
+
+                  <button
+                    onClick={async () => { await handleRemoveMember(m.user?.id, m.user?.name); }}
+                    className="text-xs text-gray-300 hover:text-red-500 transition-colors shrink-0 ml-1"
+                    title="Usuń"
+                  >
+                    Usuń
+                  </button>
+                </div>
+              ))}
+              {(!expedition.members || expedition.members.length === 0) && (
+                <p className="text-sm text-gray-400 text-center py-4">Brak uczestników.</p>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>

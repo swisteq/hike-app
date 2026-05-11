@@ -19,12 +19,6 @@ const EQUIPMENT_ITEMS = [
   { value: 'OKULARY_PRZECIWSLONECZNE', label: 'Okulary przeciwsłoneczne' },
 ];
 
-const VISIBILITY_OPTIONS = [
-  { value: 'PUBLIC',       label: 'Publiczna',          desc: 'Widoczna dla wszystkich użytkowników' },
-  { value: 'FRIENDS_ONLY', label: 'Tylko znajomi',       desc: 'Widoczna wyłącznie dla Twoich znajomych' },
-  { value: 'GROUPS_ONLY',  label: 'Tylko wspólne grupy', desc: 'Widoczna dla członków Twoich grup' },
-];
-
 const JOIN_OPTIONS = [
   { value: 'AUTO',              label: 'Automatyczne',  desc: 'Każdy może dołączyć od razu' },
   { value: 'APPROVAL_REQUIRED', label: 'Za akceptacją', desc: 'Prośby wymagają Twojej zgody' },
@@ -32,7 +26,7 @@ const JOIN_OPTIONS = [
 
 function RadioGroup({ name, options, value, onChange }) {
   return (
-    <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
       {options.map(opt => (
         <label key={opt.value} className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
           value === opt.value ? 'border-mountain-400 bg-mountain-50' : 'border-gray-200 hover:border-gray-300'
@@ -51,6 +45,61 @@ function RadioGroup({ name, options, value, onChange }) {
           </div>
         </label>
       ))}
+    </div>
+  );
+}
+
+function VisibilitySelector({ value, onChange }) {
+  const isFriends = value === 'FRIENDS_ONLY' || value === 'FRIENDS_AND_GROUPS';
+  const isGroups  = value === 'GROUPS_ONLY'  || value === 'FRIENDS_AND_GROUPS';
+
+  const toggle = (type) => {
+    if (type === 'friends') {
+      const nf = !isFriends;
+      if (nf && isGroups)  onChange('FRIENDS_AND_GROUPS');
+      else if (nf)         onChange('FRIENDS_ONLY');
+      else if (isGroups)   onChange('GROUPS_ONLY');
+      else                 onChange('PUBLIC');
+    } else {
+      const ng = !isGroups;
+      if (ng && isFriends) onChange('FRIENDS_AND_GROUPS');
+      else if (ng)         onChange('GROUPS_ONLY');
+      else if (isFriends)  onChange('FRIENDS_ONLY');
+      else                 onChange('PUBLIC');
+    }
+  };
+
+  const isPublic = value === 'PUBLIC';
+
+  return (
+    <div className="space-y-2">
+      <label className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
+        isPublic ? 'border-mountain-400 bg-mountain-50' : 'border-gray-200 hover:border-gray-300'
+      }`}>
+        <input type="radio" checked={isPublic} onChange={() => onChange('PUBLIC')}
+          className="mt-0.5 accent-mountain-600 shrink-0" />
+        <div>
+          <div className="text-sm font-medium text-gray-800">Publiczna</div>
+          <div className="text-xs text-gray-500 mt-0.5">Widoczna dla wszystkich użytkowników</div>
+        </div>
+      </label>
+      <div className="grid grid-cols-2 gap-2">
+        {[
+          { key: 'friends', label: 'Znajomi', desc: 'Widoczna dla Twoich znajomych', checked: isFriends },
+          { key: 'groups',  label: 'Wspólne grupy', desc: 'Widoczna dla członków Twoich grup', checked: isGroups },
+        ].map(({ key, label, desc, checked }) => (
+          <label key={key} className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
+            checked ? 'border-mountain-400 bg-mountain-50' : 'border-gray-200 hover:border-gray-300'
+          }`}>
+            <input type="checkbox" checked={checked} onChange={() => toggle(key)}
+              className="mt-0.5 accent-mountain-600 shrink-0" />
+            <div>
+              <div className="text-sm font-medium text-gray-800">{label}</div>
+              <div className="text-xs text-gray-500 mt-0.5">{desc}</div>
+            </div>
+          </label>
+        ))}
+      </div>
     </div>
   );
 }
@@ -89,6 +138,7 @@ export default function NewExpeditionPage() {
     visibility: 'PUBLIC',
   });
   const [dayFiles, setDayFiles] = useState({}); // dayNumber -> File
+  const [dayTypes, setDayTypes] = useState({}); // dayNumber -> 'gpx' | 'rest'
   const [equipment, setEquipment] = useState({});
   const [equipmentOpen, setEquipmentOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -141,7 +191,8 @@ export default function NewExpeditionPage() {
         expeditionId = data.id;
 
         for (const day of dayList) {
-          const file = dayFiles[day.dayNumber];
+          const isRest = dayTypes[day.dayNumber] === 'rest';
+          const file = isRest ? null : dayFiles[day.dayNumber];
           if (file) {
             const fd = new FormData();
             fd.append('file', file);
@@ -263,33 +314,45 @@ export default function NewExpeditionPage() {
                 Trasy GPX per dzień <span className="text-gray-400 font-normal">(opcjonalnie)</span>
               </label>
               <div className="space-y-2">
-                {dayList.map(day => (
-                  <div key={day.dayNumber} className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg bg-gray-50">
-                    <span className="text-sm text-gray-600 shrink-0 w-44">{day.label}</span>
-                    <label className="flex-1 flex items-center gap-2 cursor-pointer">
-                      <div className={`flex-1 text-xs px-2 py-1.5 rounded border text-center transition-colors ${
-                        dayFiles[day.dayNumber]
-                          ? 'border-mountain-400 text-mountain-700 bg-mountain-50'
-                          : 'border-gray-200 text-gray-400 bg-white hover:bg-gray-50'
-                      }`}>
-                        {dayFiles[day.dayNumber] ? dayFiles[day.dayNumber].name : 'Wybierz plik .gpx'}
+                {dayList.map(day => {
+                  const isRest = dayTypes[day.dayNumber] === 'rest';
+                  return (
+                    <div key={day.dayNumber} className="p-3 border border-gray-200 rounded-lg bg-gray-50">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm text-gray-600">{day.label}</span>
+                        <div className="flex rounded-lg border border-gray-200 overflow-hidden text-xs">
+                          {[{ val: 'gpx', label: 'Trasa GPX' }, { val: 'rest', label: 'Odpoczynek' }].map(({ val, label }) => (
+                            <button key={val} type="button"
+                              onClick={() => { setDayTypes(p => ({ ...p, [day.dayNumber]: val })); if (val === 'rest') setDayFiles(p => ({ ...p, [day.dayNumber]: null })); }}
+                              className={`px-3 py-1 transition-colors ${(isRest ? val === 'rest' : val === 'gpx') ? 'bg-mountain-600 text-white' : 'text-gray-500 hover:bg-gray-100'}`}>
+                              {label}
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                      <input
-                        type="file" accept=".gpx" className="hidden"
-                        onChange={e => handleDayFileChange(day.dayNumber, e)}
-                      />
-                    </label>
-                    {dayFiles[day.dayNumber] && (
-                      <button
-                        type="button"
-                        onClick={() => setDayFiles(prev => ({ ...prev, [day.dayNumber]: null }))}
-                        className="text-gray-400 hover:text-red-400 text-xs shrink-0"
-                      >
-                        Usuń
-                      </button>
-                    )}
-                  </div>
-                ))}
+                      {!isRest && (
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <div className={`flex-1 text-xs px-2 py-1.5 rounded border text-center transition-colors ${
+                            dayFiles[day.dayNumber]
+                              ? 'border-mountain-400 text-mountain-700 bg-mountain-50'
+                              : 'border-gray-200 text-gray-400 bg-white hover:bg-gray-50'
+                          }`}>
+                            {dayFiles[day.dayNumber] ? dayFiles[day.dayNumber].name : 'Wybierz plik .gpx'}
+                          </div>
+                          <input type="file" accept=".gpx" className="hidden"
+                            onChange={e => handleDayFileChange(day.dayNumber, e)} />
+                          {dayFiles[day.dayNumber] && (
+                            <button type="button"
+                              onClick={() => setDayFiles(prev => ({ ...prev, [day.dayNumber]: null }))}
+                              className="text-gray-400 hover:text-red-400 text-xs shrink-0">
+                              Usuń
+                            </button>
+                          )}
+                        </label>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -309,12 +372,7 @@ export default function NewExpeditionPage() {
           {/* Widoczność */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Widoczność wyprawy</label>
-            <RadioGroup
-              name="visibility"
-              options={VISIBILITY_OPTIONS}
-              value={form.visibility}
-              onChange={v => setForm({ ...form, visibility: v })}
-            />
+            <VisibilitySelector value={form.visibility} onChange={v => setForm({ ...form, visibility: v })} />
           </div>
 
           {/* Dołączanie */}

@@ -40,6 +40,8 @@ public class ExpeditionService {
     private final pl.gorskie.wyprawy.repository.ExpeditionEquipmentRepository equipmentRepository;
     private final pl.gorskie.wyprawy.repository.ExpeditionAuditLogRepository auditLogRepository;
     private final pl.gorskie.wyprawy.repository.ExpeditionDayRepository dayRepository;
+    private final pl.gorskie.wyprawy.repository.ExpeditionTransportSectionRepository transportSectionRepository;
+    private final pl.gorskie.wyprawy.repository.ExpeditionTransportOptionRepository transportOptionRepository;
 
     @Transactional
     public Expedition create(ExpeditionDto.CreateRequest request, Long organizerId) {
@@ -397,6 +399,11 @@ public class ExpeditionService {
                     .orElse(false);
             case GROUPS_ONLY -> viewerId != null &&
                     groupRepository.existsSharedGroup(e.getOrganizer().getId(), viewerId);
+            case FRIENDS_AND_GROUPS -> viewerId != null && (
+                    friendshipRepository.findBetween(e.getOrganizer().getId(), viewerId)
+                            .map(f -> f.getStatus() == pl.gorskie.wyprawy.model.Friendship.FriendshipStatus.ACCEPTED)
+                            .orElse(false)
+                    || groupRepository.existsSharedGroup(e.getOrganizer().getId(), viewerId));
         };
     }
 
@@ -404,13 +411,50 @@ public class ExpeditionService {
     public Expedition cancel(Long expeditionId, Long userId) {
         Expedition expedition = findAndCheckOrganizer(expeditionId, userId);
         if (expedition.getStatus() == Expedition.ExpeditionStatus.COMPLETED ||
-            expedition.getStatus() == Expedition.ExpeditionStatus.CANCELLED) {
+            expedition.getStatus() == Expedition.ExpeditionStatus.CANCELLED ||
+            expedition.getStatus() == Expedition.ExpeditionStatus.UNREALIZED) {
             throw new IllegalArgumentException("Nie można odwołać wyprawy o tym statusie");
         }
         expedition.setStatus(Expedition.ExpeditionStatus.CANCELLED);
         Expedition saved = expeditionRepository.save(expedition);
         notifyExpeditionMembers(saved, "Wyprawa \"" + saved.getName() + "\" została odwołana przez organizatora");
         return saved;
+    }
+
+    @Transactional
+    public Expedition markCompleted(Long expeditionId, Long userId) {
+        Expedition expedition = findAndCheckOrganizer(expeditionId, userId);
+        if (expedition.getStatus() != Expedition.ExpeditionStatus.ONGOING) {
+            throw new IllegalArgumentException("Wyprawa musi być w trakcie, aby ją zakończyć");
+        }
+        if (!isStatusDeclarationWindowOpen(expedition)) {
+            throw new IllegalArgumentException("Nie minęło jeszcze 24h od zakończenia wyprawy");
+        }
+        expedition.setStatus(Expedition.ExpeditionStatus.COMPLETED);
+        Expedition saved = expeditionRepository.save(expedition);
+        notifyExpeditionMembers(saved, "Wyprawa \"" + saved.getName() + "\" została zakończona");
+        return saved;
+    }
+
+    @Transactional
+    public Expedition markUnrealized(Long expeditionId, Long userId) {
+        Expedition expedition = findAndCheckOrganizer(expeditionId, userId);
+        if (expedition.getStatus() != Expedition.ExpeditionStatus.ONGOING) {
+            throw new IllegalArgumentException("Wyprawa musi być w trakcie, aby oznaczyć ją jako niezrealizowaną");
+        }
+        if (!isStatusDeclarationWindowOpen(expedition)) {
+            throw new IllegalArgumentException("Nie minęło jeszcze 24h od zakończenia wyprawy");
+        }
+        expedition.setStatus(Expedition.ExpeditionStatus.UNREALIZED);
+        Expedition saved = expeditionRepository.save(expedition);
+        notifyExpeditionMembers(saved, "Wyprawa \"" + saved.getName() + "\" została oznaczona jako niezrealizowana");
+        return saved;
+    }
+
+    private boolean isStatusDeclarationWindowOpen(Expedition expedition) {
+        java.time.LocalDate lastDay = expedition.getEndDate() != null
+                ? expedition.getEndDate() : expedition.getPlannedDate();
+        return java.time.LocalDateTime.now().isAfter(lastDay.plusDays(1).atStartOfDay());
     }
 
     void notifyExpeditionMembers(Expedition expedition, String message) {
@@ -692,6 +736,278 @@ public class ExpeditionService {
                 .changeType(type)
                 .description(description)
                 .build());
+    }
+
+    @Transactional
+    public ExpeditionDto.DayResponse setAccommodation(Long expeditionId, int dayNumber, ExpeditionDto.AccommodationRequest request, Long userId) {
+        findAndCheckOrganizerOrLogistyk(expeditionId, userId);
+        ExpeditionDay day = dayRepository.findByExpeditionIdAndDayNumber(expeditionId, dayNumber)
+                .orElseThrow(() -> new IllegalArgumentException("Dzień " + dayNumber + " nie istnieje"));
+
+        String url = request.getUrl() != null && !request.getUrl().isBlank() ? request.getUrl().trim() : null;
+        String name = request.getName() != null && !request.getName().isBlank() ? request.getName().trim() : null;
+
+        if (url != null && name == null) {
+            if (url.contains("maps.app.goo.gl") || url.contains("maps.google.com") || url.contains("google.com/maps")) {
+                name = resolveGoogleMapsName(url);
+            } else if (url.contains("booking.com") || url.contains("bkng.com")) {
+                name = resolveBookingName(url);
+            }
+        }
+
+        day.setAccommodationName(name);
+        day.setAccommodationUrl(url);
+        return ExpeditionDto.DayResponse.from(dayRepository.save(day));
+    }
+
+    @Transactional
+    public ExpeditionDto.DayResponse removeAccommodation(Long expeditionId, int dayNumber, Long userId) {
+        findAndCheckOrganizerOrLogistyk(expeditionId, userId);
+        ExpeditionDay day = dayRepository.findByExpeditionIdAndDayNumber(expeditionId, dayNumber)
+                .orElseThrow(() -> new IllegalArgumentException("Dzień " + dayNumber + " nie istnieje"));
+        day.setAccommodationName(null);
+        day.setAccommodationUrl(null);
+        return ExpeditionDto.DayResponse.from(dayRepository.save(day));
+    }
+
+    @Transactional
+    public ExpeditionDto.TransportSectionResponse addTransportOption(Long expeditionId, String type, ExpeditionDto.TransportOptionRequest req, Long userId) {
+        Expedition expedition = expeditionRepository.findById(expeditionId)
+                .orElseThrow(() -> new TrailNotFoundException(expeditionId));
+        if (req.getTransportType() == null)
+            throw new IllegalArgumentException("Rodzaj transportu jest wymagany");
+        if (req.getDescription() == null || req.getDescription().isBlank())
+            throw new IllegalArgumentException("Opis opcji transportu jest wymagany");
+        if (req.getTransportType() == ExpeditionTransportOption.TransportType.CAR) {
+            if (req.getSeats() == null || req.getSeats() < 1)
+                throw new IllegalArgumentException("Liczba miejsc jest wymagana dla transportu samochodem");
+        }
+        boolean isPrivileged = isOrganizerOrLogistyk(expedition, userId);
+        if (!isPrivileged && !isAcceptedMember(expedition, userId))
+            throw new AccessDeniedException("Musisz być uczestnikiem wyprawy");
+        String driverUsername = null;
+        if (req.getTransportType() == ExpeditionTransportOption.TransportType.CAR) {
+            driverUsername = userRepository.findById(userId).map(u -> u.getName()).orElse(null);
+        }
+        ExpeditionTransportSection section = getOrCreateSection(expedition, type);
+        ExpeditionTransportOption option = ExpeditionTransportOption.builder()
+                .section(section)
+                .transportType(req.getTransportType())
+                .description(req.getDescription().trim())
+                .url(req.getUrl() != null && !req.getUrl().isBlank() ? req.getUrl().trim() : null)
+                .seats(req.getTransportType() == ExpeditionTransportOption.TransportType.CAR ? req.getSeats() : null)
+                .driverUsername(driverUsername)
+                .approved(isPrivileged)
+                .build();
+        applyMeetingPoint(option, req.getMeetingPoint());
+        section.getOptions().add(option);
+        return ExpeditionDto.TransportSectionResponse.from(transportSectionRepository.save(section));
+    }
+
+    @Transactional
+    public ExpeditionDto.TransportSectionResponse approveTransportOption(Long expeditionId, Long optionId, Long userId) {
+        findAndCheckOrganizerOrLogistyk(expeditionId, userId);
+        ExpeditionTransportOption option = transportOptionRepository.findById(optionId)
+                .orElseThrow(() -> new IllegalArgumentException("Opcja transportu nie istnieje"));
+        if (!option.getSection().getExpedition().getId().equals(expeditionId))
+            throw new AccessDeniedException("Opcja nie należy do tej wyprawy");
+        option.setApproved(true);
+        transportOptionRepository.save(option);
+        return ExpeditionDto.TransportSectionResponse.from(option.getSection());
+    }
+
+    @Transactional
+    public ExpeditionDto.TransportSectionResponse updateTransportOption(Long expeditionId, Long optionId, ExpeditionDto.TransportOptionRequest req, Long userId) {
+        findAndCheckOrganizerOrLogistyk(expeditionId, userId);
+        if (req.getTransportType() == null)
+            throw new IllegalArgumentException("Rodzaj transportu jest wymagany");
+        if (req.getDescription() == null || req.getDescription().isBlank())
+            throw new IllegalArgumentException("Opis opcji transportu jest wymagany");
+        if (req.getTransportType() == ExpeditionTransportOption.TransportType.CAR) {
+            if (req.getSeats() == null || req.getSeats() < 1)
+                throw new IllegalArgumentException("Liczba miejsc jest wymagana dla transportu samochodem");
+        }
+        ExpeditionTransportOption option = transportOptionRepository.findById(optionId)
+                .orElseThrow(() -> new IllegalArgumentException("Opcja transportu nie istnieje"));
+        if (!option.getSection().getExpedition().getId().equals(expeditionId))
+            throw new AccessDeniedException("Opcja nie należy do tej wyprawy");
+        applyMeetingPoint(option, req.getMeetingPoint());
+        option.setTransportType(req.getTransportType());
+        option.setDescription(req.getDescription().trim());
+        option.setUrl(req.getUrl() != null && !req.getUrl().isBlank() ? req.getUrl().trim() : null);
+        option.setSeats(req.getTransportType() == ExpeditionTransportOption.TransportType.CAR ? req.getSeats() : null);
+        if (req.getTransportType() == ExpeditionTransportOption.TransportType.CAR && option.getDriverUsername() == null) {
+            option.setDriverUsername(userRepository.findById(userId).map(u -> u.getName()).orElse(null));
+        } else if (req.getTransportType() != ExpeditionTransportOption.TransportType.CAR) {
+            option.setDriverUsername(null);
+        }
+        transportOptionRepository.save(option);
+        return ExpeditionDto.TransportSectionResponse.from(option.getSection());
+    }
+
+    private void applyMeetingPoint(ExpeditionTransportOption option, String value) {
+        if (value == null || value.isBlank()) {
+            option.setMeetingPoint(null);
+            option.setMeetingPointUrl(null);
+        } else if (value.contains("maps.app.goo.gl")) {
+            String resolved = resolveGoogleMapsName(value.trim());
+            option.setMeetingPoint(resolved != null ? resolved : value.trim());
+            option.setMeetingPointUrl(value.trim());
+        } else if (value.startsWith("http://") || value.startsWith("https://")) {
+            option.setMeetingPoint(value.trim());
+            option.setMeetingPointUrl(value.trim());
+        } else {
+            option.setMeetingPoint(value.trim());
+            option.setMeetingPointUrl(null);
+        }
+    }
+
+    @Transactional
+    public void deleteTransportOption(Long expeditionId, Long optionId, Long userId) {
+        findAndCheckOrganizerOrLogistyk(expeditionId, userId);
+        ExpeditionTransportOption option = transportOptionRepository.findById(optionId)
+                .orElseThrow(() -> new IllegalArgumentException("Opcja transportu nie istnieje"));
+        if (!option.getSection().getExpedition().getId().equals(expeditionId))
+            throw new AccessDeniedException("Opcja nie należy do tej wyprawy");
+        ExpeditionTransportSection section = option.getSection();
+        section.getOptions().remove(option);
+        transportSectionRepository.save(section);
+    }
+
+    private ExpeditionTransportSection getOrCreateSection(Expedition expedition, String type) {
+        ExpeditionTransportSection.SectionType sectionType;
+        Integer dayNumber = null;
+        if ("arrival".equals(type)) {
+            sectionType = ExpeditionTransportSection.SectionType.ARRIVAL;
+        } else if ("return".equals(type)) {
+            sectionType = ExpeditionTransportSection.SectionType.RETURN;
+        } else if (type != null && type.startsWith("day-")) {
+            sectionType = ExpeditionTransportSection.SectionType.DAY_TRANSITION;
+            dayNumber = Integer.parseInt(type.substring(4));
+        } else {
+            throw new IllegalArgumentException("Nieznany typ sekcji transportu: " + type);
+        }
+        Integer finalDayNumber = dayNumber;
+        return transportSectionRepository
+                .findByExpeditionIdAndSectionTypeAndDayNumber(expedition.getId(), sectionType, dayNumber)
+                .orElseGet(() -> {
+                    ExpeditionTransportSection s = ExpeditionTransportSection.builder()
+                            .expedition(expedition)
+                            .sectionType(sectionType)
+                            .dayNumber(finalDayNumber)
+                            .build();
+                    return transportSectionRepository.save(s);
+                });
+    }
+
+    public String resolvePlaceName(String url) {
+        if (url == null || url.isBlank()) return null;
+        if (url.contains("maps.app.goo.gl")) {
+            return resolveGoogleMapsName(url);
+        }
+        return null;
+    }
+
+    private String resolveGoogleMapsName(String url) {
+        try {
+            String current = url;
+            for (int i = 0; i < 6; i++) {
+                java.net.HttpURLConnection conn = (java.net.HttpURLConnection) new java.net.URL(current).openConnection();
+                conn.setInstanceFollowRedirects(false);
+                conn.setRequestProperty("User-Agent", "Mozilla/5.0");
+                conn.setConnectTimeout(4000);
+                conn.setReadTimeout(4000);
+                int status = conn.getResponseCode();
+                String location = conn.getHeaderField("Location");
+                conn.disconnect();
+                if (status >= 300 && status < 400 && location != null) {
+                    if (location.contains("/maps/place/")) {
+                        String[] parts = location.split("/maps/place/");
+                        if (parts.length > 1) {
+                            String raw = parts[1].split("/")[0].split("\\?")[0];
+                            return java.net.URLDecoder.decode(raw.replace("+", " "), java.nio.charset.StandardCharsets.UTF_8);
+                        }
+                    }
+                    current = location.startsWith("http") ? location : "https://www.google.com" + location;
+                } else {
+                    break;
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Nie udało się rozwiązać URL Google Maps: {}", url);
+        }
+        return null;
+    }
+
+    private String resolveBookingName(String url) {
+        try {
+            String target = url;
+            if (!url.contains("/hotel/")) {
+                target = resolveRedirect(url);
+                if (target == null) return null;
+            }
+            java.util.regex.Matcher m = java.util.regex.Pattern
+                    .compile("/hotel/[a-z]{2}/([^./?]+)")
+                    .matcher(target);
+            if (m.find()) {
+                String[] words = m.group(1).split("-");
+                StringBuilder sb = new StringBuilder();
+                for (String w : words) {
+                    if (w.isEmpty()) continue;
+                    if (sb.length() > 0) sb.append(' ');
+                    sb.append(Character.toUpperCase(w.charAt(0))).append(w.substring(1));
+                }
+                return sb.toString();
+            }
+        } catch (Exception e) {
+            log.warn("Nie udało się wyciągnąć nazwy z URL Booking.com: {}", url);
+        }
+        return null;
+    }
+
+    private String resolveRedirect(String url) {
+        try {
+            java.net.HttpURLConnection conn = (java.net.HttpURLConnection) new java.net.URL(url).openConnection();
+            conn.setInstanceFollowRedirects(false);
+            conn.setRequestProperty("User-Agent", "Mozilla/5.0");
+            conn.setConnectTimeout(4000);
+            conn.setReadTimeout(4000);
+            int status = conn.getResponseCode();
+            conn.disconnect();
+            if (status >= 300 && status < 400) {
+                return conn.getHeaderField("Location");
+            }
+        } catch (Exception ignored) {}
+        return null;
+    }
+
+    private boolean isOrganizerOrLogistyk(Expedition expedition, Long userId) {
+        if (expedition.getOrganizer().getId().equals(userId)) return true;
+        return expedition.getMembers().stream()
+                .anyMatch(m -> m.getUser().getId().equals(userId)
+                        && m.getStatus() == ExpeditionMember.MemberStatus.ACCEPTED
+                        && m.getMemberRole() == ExpeditionMember.MemberRole.LOGISTYK);
+    }
+
+    private boolean isAcceptedMember(Expedition expedition, Long userId) {
+        if (expedition.getOrganizer().getId().equals(userId)) return true;
+        return expedition.getMembers().stream()
+                .anyMatch(m -> m.getUser().getId().equals(userId)
+                        && m.getStatus() == ExpeditionMember.MemberStatus.ACCEPTED);
+    }
+
+    private Expedition findAndCheckOrganizerOrLogistyk(Long expeditionId, Long userId) {
+        Expedition expedition = expeditionRepository.findById(expeditionId)
+                .orElseThrow(() -> new TrailNotFoundException(expeditionId));
+        boolean isOrganizer = expedition.getOrganizer().getId().equals(userId);
+        boolean isLogistyk = expedition.getMembers().stream()
+                .anyMatch(m -> m.getUser().getId().equals(userId)
+                        && m.getStatus() == ExpeditionMember.MemberStatus.ACCEPTED
+                        && m.getMemberRole() == ExpeditionMember.MemberRole.LOGISTYK);
+        if (!isOrganizer && !isLogistyk) {
+            throw new AccessDeniedException("Tylko organizator lub logistyk może wykonać tę akcję");
+        }
+        return expedition;
     }
 
     private Expedition findAndCheckOrganizerOrNavigator(Long expeditionId, Long userId) {

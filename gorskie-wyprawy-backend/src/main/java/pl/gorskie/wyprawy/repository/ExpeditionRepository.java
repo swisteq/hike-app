@@ -52,4 +52,13 @@ public interface ExpeditionRepository extends JpaRepository<Expedition, Long> {
 
     List<Expedition> findByStatusAndPlannedDateLessThanEqual(
             Expedition.ExpeditionStatus status, java.time.LocalDate date);
+
+    @Query("""
+        SELECT e FROM Expedition e
+        WHERE e.status = 'ONGOING'
+          AND (e.statusDeclarationNotified = false OR e.statusDeclarationNotified IS NULL)
+          AND (e.endDate IS NOT NULL AND e.endDate < :today
+               OR e.endDate IS NULL AND e.plannedDate < :today)
+        """)
+    List<Expedition> findAwaitingStatusDeclaration(@Param("today") java.time.LocalDate today);
 }

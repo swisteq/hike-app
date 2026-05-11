@@ -82,4 +82,10 @@ public class ExpeditionDay {
 
     @Column(name = "highest_peak_elevation_m")
     private Integer highestPeakElevationM;
+
+    @Column(name = "accommodation_name")
+    private String accommodationName;
+
+    @Column(name = "accommodation_url")
+    private String accommodationUrl;
 }

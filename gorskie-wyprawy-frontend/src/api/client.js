@@ -50,6 +50,8 @@ export const createExpeditionFromGpx = (formData) =>
   api.post('/expeditions/from-gpx', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
 export const updateExpedition = (id, data) => api.patch(`/expeditions/${id}`, data);
 export const cancelExpedition = (id) => api.post(`/expeditions/${id}/cancel`);
+export const markExpeditionCompleted = (id) => api.post(`/expeditions/${id}/mark-completed`);
+export const markExpeditionUnrealized = (id) => api.post(`/expeditions/${id}/mark-unrealized`);
 export const deleteExpedition = (id) => api.delete(`/expeditions/${id}`);
 export const inviteToExpedition = (id, username) => api.post(`/expeditions/${id}/invite`, { username });
 export const respondToInvite = (id, accept) => api.post(`/expeditions/${id}/respond`, { accept });
@@ -64,7 +66,18 @@ export const updateExpeditionEquipment = (id, equipment) => api.put(`/expedition
 export const changeExpeditionTrail = (id, formData) =>
   api.post(`/expeditions/${id}/change-trail`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
 export const getAuditLogs = (id) => api.get(`/expeditions/${id}/audit-logs`);
+export const resolvePlaceName = (url) => api.get('/expeditions/resolve-place', { params: { url } });
 export const createMultiDayExpedition = (data) => api.post('/expeditions/multi-day', data);
+export const setDayAccommodation = (id, dayNumber, data) => api.post(`/expeditions/${id}/days/${dayNumber}/accommodation`, data);
+export const removeDayAccommodation = (id, dayNumber) => api.delete(`/expeditions/${id}/days/${dayNumber}/accommodation`);
+export const addTransportOption = (id, type, data) =>
+  api.post(`/expeditions/${id}/transport/${type}/options`, data);
+export const updateTransportOption = (id, optionId, data) =>
+  api.put(`/expeditions/${id}/transport/options/${optionId}`, data);
+export const deleteTransportOption = (id, optionId) =>
+  api.delete(`/expeditions/${id}/transport/options/${optionId}`);
+export const approveTransportOption = (id, optionId) =>
+  api.post(`/expeditions/${id}/transport/options/${optionId}/approve`);
 export const addDayTrail = (id, dayNumber, formData) =>
   api.post(`/expeditions/${id}/days/${dayNumber}/trail`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
 export const getDayTrack = (id, dayNumber) => api.get(`/expeditions/${id}/days/${dayNumber}/track`);

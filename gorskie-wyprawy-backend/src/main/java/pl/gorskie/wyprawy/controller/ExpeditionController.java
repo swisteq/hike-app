@@ -16,14 +16,12 @@ import pl.gorskie.wyprawy.model.ExpeditionMember;
 import pl.gorskie.wyprawy.security.CurrentUserResolver;
 import pl.gorskie.wyprawy.service.ExpeditionService;
 
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.util.Optional;
-
 import java.io.IOException;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * REST API dla wypraw górskich.
@@ -77,6 +75,46 @@ public class ExpeditionController {
         return ResponseEntity.ok(ExpeditionDto.DayResponse.from(day));
     }
 
+    @PostMapping("/{id}/days/{dayNumber}/accommodation")
+    public ResponseEntity<ExpeditionDto.DayResponse> setAccommodation(
+            @PathVariable Long id,
+            @PathVariable int dayNumber,
+            @RequestBody ExpeditionDto.AccommodationRequest request) {
+        return ResponseEntity.ok(expeditionService.setAccommodation(id, dayNumber, request, currentUser.getCurrentUserId()));
+    }
+
+    @DeleteMapping("/{id}/days/{dayNumber}/accommodation")
+    public ResponseEntity<ExpeditionDto.DayResponse> removeAccommodation(
+            @PathVariable Long id,
+            @PathVariable int dayNumber) {
+        return ResponseEntity.ok(expeditionService.removeAccommodation(id, dayNumber, currentUser.getCurrentUserId()));
+    }
+
+    @PostMapping("/{id}/transport/{type}/options")
+    public ResponseEntity<ExpeditionDto.TransportSectionResponse> addTransportOption(
+            @PathVariable Long id,
+            @PathVariable String type,
+            @RequestBody ExpeditionDto.TransportOptionRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(expeditionService.addTransportOption(id, type, request, currentUser.getCurrentUserId()));
+    }
+
+    @PutMapping("/{id}/transport/options/{optionId}")
+    public ResponseEntity<ExpeditionDto.TransportSectionResponse> updateTransportOption(
+            @PathVariable Long id,
+            @PathVariable Long optionId,
+            @RequestBody ExpeditionDto.TransportOptionRequest request) {
+        return ResponseEntity.ok(expeditionService.updateTransportOption(id, optionId, request, currentUser.getCurrentUserId()));
+    }
+
+    @DeleteMapping("/{id}/transport/options/{optionId}")
+    public ResponseEntity<Void> deleteTransportOption(
+            @PathVariable Long id,
+            @PathVariable Long optionId) {
+        expeditionService.deleteTransportOption(id, optionId, currentUser.getCurrentUserId());
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/{id}/days/{dayNumber}/track")
     public ResponseEntity<List<double[]>> getDayTrack(
             @PathVariable Long id,
@@ -110,6 +148,22 @@ public class ExpeditionController {
     public ResponseEntity<ExpeditionDto.ExpeditionResponse> cancel(@PathVariable Long id) {
         Expedition expedition = expeditionService.cancel(id, currentUser.getCurrentUserId());
         Long userId = currentUser.getCurrentUserId();
+        return ResponseEntity.ok(ExpeditionDto.ExpeditionResponse.from(expedition,
+                expeditionService.resolveViewerRole(expedition, userId)));
+    }
+
+    @PostMapping("/{id}/mark-completed")
+    public ResponseEntity<ExpeditionDto.ExpeditionResponse> markCompleted(@PathVariable Long id) {
+        Long userId = currentUser.getCurrentUserId();
+        Expedition expedition = expeditionService.markCompleted(id, userId);
+        return ResponseEntity.ok(ExpeditionDto.ExpeditionResponse.from(expedition,
+                expeditionService.resolveViewerRole(expedition, userId)));
+    }
+
+    @PostMapping("/{id}/mark-unrealized")
+    public ResponseEntity<ExpeditionDto.ExpeditionResponse> markUnrealized(@PathVariable Long id) {
+        Long userId = currentUser.getCurrentUserId();
+        Expedition expedition = expeditionService.markUnrealized(id, userId);
         return ResponseEntity.ok(ExpeditionDto.ExpeditionResponse.from(expedition,
                 expeditionService.resolveViewerRole(expedition, userId)));
     }
@@ -295,6 +349,18 @@ public class ExpeditionController {
     // -------------------------------------------------------------------------
     // Error handling
     // -------------------------------------------------------------------------
+
+    @PostMapping("/{id}/transport/options/{optionId}/approve")
+    public ResponseEntity<ExpeditionDto.TransportSectionResponse> approveTransportOption(
+            @PathVariable Long id, @PathVariable Long optionId) {
+        return ResponseEntity.ok(expeditionService.approveTransportOption(id, optionId, currentUser.getCurrentUserId()));
+    }
+
+    @GetMapping("/resolve-place")
+    public ResponseEntity<Map<String, String>> resolvePlace(@RequestParam String url) {
+        String name = expeditionService.resolvePlaceName(url);
+        return ResponseEntity.ok(Map.of("name", name != null ? name : ""));
+    }
 
     @ExceptionHandler(ExpeditionService.AccessDeniedException.class)
     public ResponseEntity<Map<String, Object>> handleAccessDenied(ExpeditionService.AccessDeniedException e) {

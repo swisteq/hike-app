@@ -22,6 +22,25 @@ public class ExpeditionStatusScheduler {
     private final ExpeditionService expeditionService;
     private final NotificationService notificationService;
 
+    @Scheduled(fixedDelay = 3_600_000)
+    @Transactional
+    public void notifyStatusDeclarationRequired() {
+        List<Expedition> candidates = expeditionRepository
+                .findAwaitingStatusDeclaration(LocalDate.now());
+
+        for (Expedition e : candidates) {
+            notificationService.notify(
+                    e.getOrganizer().getId(),
+                    NotificationType.EXPEDITION_STATUS_DECLARATION_REQUIRED,
+                    "Wyprawa \"" + e.getName() + "\" dobiegła końca. Zadeklaruj jej ostateczny status.",
+                    "/expeditions/" + e.getId()
+            );
+            e.setStatusDeclarationNotified(true);
+            expeditionRepository.save(e);
+            log.info("Wysłano powiadomienie o deklaracji statusu dla wyprawy {} '{}'", e.getId(), e.getName());
+        }
+    }
+
     @Scheduled(fixedDelay = 60_000)
     @Transactional
     public void transitionToOngoing() {
