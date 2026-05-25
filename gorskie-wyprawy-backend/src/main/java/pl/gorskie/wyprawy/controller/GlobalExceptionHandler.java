@@ -5,7 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import pl.gorskie.wyprawy.service.AccessDeniedException;
-import pl.gorskie.wyprawy.service.TrailNotFoundException;
+import pl.gorskie.wyprawy.service.NotFoundException;
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -16,8 +16,8 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(TrailNotFoundException.class)
-    public ResponseEntity<Map<String, Object>> handleNotFound(TrailNotFoundException e) {
+    @ExceptionHandler(NotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleNotFound(NotFoundException e) {
         return error(HttpStatus.NOT_FOUND, e.getMessage());
     }
 

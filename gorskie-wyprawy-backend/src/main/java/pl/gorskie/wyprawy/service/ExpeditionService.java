@@ -2,6 +2,7 @@ package pl.gorskie.wyprawy.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -56,8 +57,10 @@ public class ExpeditionService {
     private final FriendshipRepository friendshipRepository;
     private final GroupRepository groupRepository;
     private final NotificationService notificationService;
-    private final TrailService trailService;
     private final GpxParserService gpxParserService;
+
+    @Value("${app.uploads.dir:./uploads/gpx}")
+    private String uploadsDir;
     private final LocationRecognitionService locationRecognitionService;
     private final ExpeditionEquipmentRepository equipmentRepository;
     private final ExpeditionAuditLogRepository auditLogRepository;
@@ -71,13 +74,13 @@ public class ExpeditionService {
                                     LocalTime startTime, String description,
                                     Expedition.JoinMode joinMode, Expedition.Visibility visibility,
                                     Long organizerId) throws IOException {
-        trailService.validateGpxFile(file);
+        validateGpxFile(file);
         User organizer = findUser(organizerId);
 
         String fallbackName = file.getOriginalFilename() != null
                 ? file.getOriginalFilename().replaceAll("(?i)\\.gpx$", "") : "Nieznana trasa";
         GpxParseResult parsed = gpxParserService.parse(file.getInputStream(), fallbackName);
-        String gpxPath = trailService.saveGpxFile(file);
+        String gpxPath = saveGpxFile(file);
 
         Expedition expedition = Expedition.builder()
                 .name(name)
@@ -146,7 +149,7 @@ public class ExpeditionService {
     @Transactional
     public ExpeditionDay addDayTrail(Long expeditionId, int dayNumber, MultipartFile file, Long userId) throws IOException {
         Expedition expedition = findAndCheckOrganizerOrNavigator(expeditionId, userId);
-        trailService.validateGpxFile(file);
+        validateGpxFile(file);
 
         ExpeditionDay day = dayRepository.findByExpeditionIdAndDayNumber(expeditionId, dayNumber)
                 .orElseThrow(() -> new IllegalArgumentException("Dzień " + dayNumber + " nie istnieje w tej wyprawie"));
@@ -154,7 +157,7 @@ public class ExpeditionService {
         String fallbackName = file.getOriginalFilename() != null
                 ? file.getOriginalFilename().replaceAll("(?i)\\.gpx$", "") : "Trasa dnia " + dayNumber;
         GpxParseResult parsed = gpxParserService.parse(file.getInputStream(), fallbackName);
-        String gpxPath = trailService.saveGpxFile(file);
+        String gpxPath = saveGpxFile(file);
 
         day.setTrailName(parsed.getName());
         day.setDistanceKm(parsed.getDistanceKm());
@@ -248,7 +251,7 @@ public class ExpeditionService {
     @Transactional(readOnly = true)
     public Expedition findById(Long id) {
         return expeditionRepository.findById(id)
-                .orElseThrow(() -> new TrailNotFoundException(id));
+                .orElseThrow(() -> new NotFoundException("Wyprawa o id=" + id + " nie istnieje"));
     }
 
     public String resolveViewerRole(Expedition expedition, Long userId) {
@@ -302,14 +305,14 @@ public class ExpeditionService {
     @Transactional
     public Expedition changeTrail(Long expeditionId, MultipartFile file, Long userId) throws IOException {
         Expedition expedition = findAndCheckOrganizerOrNavigator(expeditionId, userId);
-        trailService.validateGpxFile(file);
+        validateGpxFile(file);
 
         String oldName = expedition.getTrailName() != null ? expedition.getTrailName() : "nieznana";
 
         String fallbackName = file.getOriginalFilename() != null
                 ? file.getOriginalFilename().replaceAll("(?i)\\.gpx$", "") : "Nieznana trasa";
         GpxParseResult parsed = gpxParserService.parse(file.getInputStream(), fallbackName);
-        String gpxPath = trailService.saveGpxFile(file);
+        String gpxPath = saveGpxFile(file);
 
         expedition.setTrailName(parsed.getName());
         expedition.setDistanceKm(parsed.getDistanceKm());
@@ -341,7 +344,7 @@ public class ExpeditionService {
     @Transactional(readOnly = true)
     public List<ExpeditionAuditLog> getAuditLogs(Long expeditionId, Long userId) {
         Expedition expedition = expeditionRepository.findById(expeditionId)
-                .orElseThrow(() -> new TrailNotFoundException(expeditionId));
+                .orElseThrow(() -> new NotFoundException("Wyprawa o id=" + expeditionId + " nie istnieje"));
         String role = resolveViewerRole(expedition, userId);
         if (!List.of("ORGANIZER", "MEMBER", "NAWIGATOR", "LOGISTYK").contains(role)) {
             throw new AccessDeniedException("Brak dostępu do logów zmian");
@@ -459,7 +462,7 @@ public class ExpeditionService {
     @Transactional
     public ExpeditionMember join(Long expeditionId, Long userId) {
         Expedition expedition = expeditionRepository.findById(expeditionId)
-                .orElseThrow(() -> new TrailNotFoundException(expeditionId));
+                .orElseThrow(() -> new NotFoundException("Wyprawa o id=" + expeditionId + " nie istnieje"));
 
         if (expedition.getStatus() != Expedition.ExpeditionStatus.PLANNED) {
             throw new IllegalArgumentException("Można dołączyć tylko do planowanych wypraw");
@@ -518,7 +521,7 @@ public class ExpeditionService {
     @Transactional(readOnly = true)
     public List<double[]> getTrackPoints(Long expeditionId) throws IOException {
         Expedition expedition = expeditionRepository.findById(expeditionId)
-                .orElseThrow(() -> new TrailNotFoundException(expeditionId));
+                .orElseThrow(() -> new NotFoundException("Wyprawa o id=" + expeditionId + " nie istnieje"));
 
         String gpxPath = expedition.getGpxFilePath();
 
@@ -600,7 +603,7 @@ public class ExpeditionService {
     @Transactional
     public void removeMember(Long expeditionId, Long targetUserId, Long requesterId) {
         Expedition expedition = expeditionRepository.findById(expeditionId)
-                .orElseThrow(() -> new TrailNotFoundException(expeditionId));
+                .orElseThrow(() -> new NotFoundException("Wyprawa o id=" + expeditionId + " nie istnieje"));
 
         boolean isOrganizer = expedition.getOrganizer().getId().equals(requesterId);
         boolean isSelf = requesterId.equals(targetUserId);
@@ -640,7 +643,7 @@ public class ExpeditionService {
     @Transactional
     public ExpeditionComment addComment(Long expeditionId, String content, Long parentId, Long userId) {
         Expedition expedition = expeditionRepository.findById(expeditionId)
-                .orElseThrow(() -> new TrailNotFoundException(expeditionId));
+                .orElseThrow(() -> new NotFoundException("Wyprawa o id=" + expeditionId + " nie istnieje"));
 
         if (!expeditionRepository.hasAccess(expeditionId, userId)) {
             throw new AccessDeniedException("Tylko czlonkowie wyprawy moga komentowac");
@@ -774,7 +777,7 @@ public class ExpeditionService {
     public ExpeditionDto.TransportSectionResponse addTransportOption(Long expeditionId, String type,
                                                                       ExpeditionDto.TransportOptionRequest req, Long userId) {
         Expedition expedition = expeditionRepository.findById(expeditionId)
-                .orElseThrow(() -> new TrailNotFoundException(expeditionId));
+                .orElseThrow(() -> new NotFoundException("Wyprawa o id=" + expeditionId + " nie istnieje"));
         if (req.getTransportType() == null)
             throw new IllegalArgumentException("Rodzaj transportu jest wymagany");
         if (req.getDescription() == null || req.getDescription().isBlank())
@@ -1037,7 +1040,7 @@ public class ExpeditionService {
 
     private Expedition findAndCheckOrganizerOrLogistyk(Long expeditionId, Long userId) {
         Expedition expedition = expeditionRepository.findById(expeditionId)
-                .orElseThrow(() -> new TrailNotFoundException(expeditionId));
+                .orElseThrow(() -> new NotFoundException("Wyprawa o id=" + expeditionId + " nie istnieje"));
         if (!isOrganizerOrLogistyk(expedition, userId)) {
             throw new AccessDeniedException("Tylko organizator lub logistyk może wykonać tę akcję");
         }
@@ -1046,7 +1049,7 @@ public class ExpeditionService {
 
     private Expedition findAndCheckOrganizerOrNavigator(Long expeditionId, Long userId) {
         Expedition expedition = expeditionRepository.findById(expeditionId)
-                .orElseThrow(() -> new TrailNotFoundException(expeditionId));
+                .orElseThrow(() -> new NotFoundException("Wyprawa o id=" + expeditionId + " nie istnieje"));
         boolean isOrganizer = expedition.getOrganizer().getId().equals(userId);
         boolean isNavigator = expedition.getMembers().stream()
                 .anyMatch(m -> m.getUser().getId().equals(userId)
@@ -1060,7 +1063,7 @@ public class ExpeditionService {
 
     private Expedition findAndCheckOrganizer(Long expeditionId, Long userId) {
         Expedition expedition = expeditionRepository.findById(expeditionId)
-                .orElseThrow(() -> new TrailNotFoundException(expeditionId));
+                .orElseThrow(() -> new NotFoundException("Wyprawa o id=" + expeditionId + " nie istnieje"));
         if (!expedition.getOrganizer().getId().equals(userId)) {
             throw new AccessDeniedException("Tylko organizator moze wykonac te akcje");
         }
@@ -1070,6 +1073,25 @@ public class ExpeditionService {
     private User findUser(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("Nie znaleziono uzytkownika id=" + userId));
+    }
+
+    public void validateGpxFile(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("Plik GPX jest wymagany");
+        }
+        String name = file.getOriginalFilename();
+        if (name == null || !name.toLowerCase().endsWith(".gpx")) {
+            throw new IllegalArgumentException("Plik musi mieć rozszerzenie .gpx");
+        }
+    }
+
+    public String saveGpxFile(MultipartFile file) throws IOException {
+        Path dir = Paths.get(uploadsDir);
+        Files.createDirectories(dir);
+        String uniqueName = UUID.randomUUID() + "_" + file.getOriginalFilename();
+        Path dest = dir.resolve(uniqueName);
+        file.transferTo(dest);
+        return dest.toString();
     }
 
 }

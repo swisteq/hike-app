@@ -1,8 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
-import TrailsPage from './pages/TrailsPage';
-import TrailDetailPage from './pages/TrailDetailPage';
 import { LoginPage, RegisterPage } from './pages/AuthPages';
 import ExpeditionsPage from './pages/ExpeditionsPage';
 import BrowseExpeditionsPage from './pages/BrowseExpeditionsPage';
@@ -40,9 +38,6 @@ export default function App() {
           {/* Z Navbar */}
           <Route path="/join/:token" element={<Layout><JoinByLinkPage /></Layout>} />
           <Route path="/" element={<Layout><BrowseExpeditionsPage /></Layout>} />
-          <Route path="/trasy" element={<Layout><TrailsPage /></Layout>} />
-          <Route path="/trails/:id" element={<Layout><TrailDetailPage /></Layout>} />
-
           {/* Prywatne */}
           <Route path="/notifications" element={
             <PrivateRoute><Layout><NotificationsPage /></Layout></PrivateRoute>

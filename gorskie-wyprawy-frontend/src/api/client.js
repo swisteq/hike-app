@@ -30,13 +30,6 @@ api.interceptors.response.use(
 export const register = (data) => api.post('/auth/register', data);
 export const login = (data) => api.post('/auth/login', data);
 
-// --- Trasy ---
-export const getTrails = (params) => api.get('/trails', { params });
-export const getTrail = (id) => api.get(`/trails/${id}`);
-export const importTrail = (formData) => api.post('/trails/import', formData);
-export const getTrailStats = () => api.get('/trails/meta/stats');
-export const getLocationTags = () => api.get('/trails/meta/tags');
-
 // --- Wyprawy ---
 export const getMyExpeditions = () => api.get('/expeditions');
 export const getPublicExpeditions = () => api.get('/expeditions/public');
