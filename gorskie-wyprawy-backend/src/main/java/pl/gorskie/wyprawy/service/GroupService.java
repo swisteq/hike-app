@@ -73,7 +73,6 @@ public class GroupService {
                     case ACCEPTED -> "MEMBER";
                     case INVITED  -> "INVITED";
                     case PENDING  -> "PENDING";
-                    case DECLINED -> "VISITOR";
                 })
                 .orElse("VISITOR");
     }
@@ -127,14 +126,19 @@ public class GroupService {
                 .orElseThrow(() -> new IllegalArgumentException("Nie znaleziono zaproszenia"));
         if (member.getStatus() != GroupMember.MemberStatus.INVITED)
             throw new IllegalArgumentException("Zaproszenie zostało już rozpatrzone");
-        member.setStatus(accept ? GroupMember.MemberStatus.ACCEPTED : GroupMember.MemberStatus.DECLINED);
-        GroupMember saved = memberRepository.save(member);
         Group group = member.getGroup();
-        NotificationType type = accept ? NotificationType.GROUP_JOIN_APPROVED : NotificationType.GROUP_JOIN_DECLINED;
-        String msg = accept
-                ? "Twoja prośba o dołączenie do grupy \"" + group.getName() + "\" została zaakceptowana"
-                : "Twoja prośba o dołączenie do grupy \"" + group.getName() + "\" została odrzucona";
-        notificationService.notify(member.getUser().getId(), type, msg, "/groups/" + group.getId());
+        if (!accept) {
+            memberRepository.delete(member);
+            notificationService.notify(member.getUser().getId(), NotificationType.GROUP_JOIN_DECLINED,
+                    "Twoja prośba o dołączenie do grupy \"" + group.getName() + "\" została odrzucona",
+                    "/groups/" + group.getId());
+            return member;
+        }
+        member.setStatus(GroupMember.MemberStatus.ACCEPTED);
+        GroupMember saved = memberRepository.save(member);
+        notificationService.notify(member.getUser().getId(), NotificationType.GROUP_JOIN_APPROVED,
+                "Twoja prośba o dołączenie do grupy \"" + group.getName() + "\" została zaakceptowana",
+                "/groups/" + group.getId());
         return saved;
     }
 

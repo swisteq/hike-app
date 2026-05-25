@@ -7,8 +7,6 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
 @Table(name = "users")
@@ -40,8 +38,4 @@ public class User {
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
-    @OneToMany(mappedBy = "organizer", cascade = CascadeType.ALL)
-    @Builder.Default
-    @ToString.Exclude
-    private List<Expedition> organizedExpeditions = new ArrayList<>();
 }

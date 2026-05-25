@@ -42,7 +42,6 @@ public class GroupMember {
     public enum MemberStatus {
         INVITED,  // właściciel zaprosił — czeka na akceptację użytkownika
         PENDING,  // użytkownik poprosił o dołączenie — czeka na właściciela
-        ACCEPTED,
-        DECLINED
+        ACCEPTED
     }
 }

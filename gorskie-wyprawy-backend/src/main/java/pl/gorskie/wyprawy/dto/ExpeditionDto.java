@@ -450,7 +450,7 @@ public class ExpeditionDto {
             return TransportSectionResponse.builder()
                     .id(section.getId())
                     .sectionType(section.getSectionType())
-                    .dayNumber(section.getDayNumber())
+                    .dayNumber(section.getExpeditionDay() != null ? section.getExpeditionDay().getDayNumber() : null)
                     .options(section.getOptions().stream().map(TransportOptionResponse::from).toList())
                     .build();
         }

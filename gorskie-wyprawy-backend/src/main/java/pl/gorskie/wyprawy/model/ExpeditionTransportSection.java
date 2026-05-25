@@ -8,7 +8,7 @@ import java.util.List;
 
 @Entity
 @Table(name = "expedition_transport_sections",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"expedition_id", "section_type", "day_number"}))
+        uniqueConstraints = @UniqueConstraint(columnNames = {"expedition_id", "section_type", "expedition_day_id"}))
 @Data
 @Builder
 @NoArgsConstructor
@@ -29,8 +29,10 @@ public class ExpeditionTransportSection {
     @Column(name = "section_type", nullable = false)
     private SectionType sectionType;
 
-    @Column(name = "day_number")
-    private Integer dayNumber;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "expedition_day_id")
+    @ToString.Exclude
+    private ExpeditionDay expeditionDay;
 
     @OneToMany(mappedBy = "section", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("id ASC")

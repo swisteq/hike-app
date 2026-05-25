@@ -36,7 +36,7 @@ public class ExpeditionMember {
     private MemberStatus status = MemberStatus.INVITED;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "member_role", columnDefinition = "varchar(20) default 'MEMBER'")
+    @Column(name = "member_role")
     @Builder.Default
     private MemberRole memberRole = MemberRole.MEMBER;
 
@@ -45,10 +45,9 @@ public class ExpeditionMember {
     private LocalDateTime createdAt;
 
     public enum MemberStatus {
-        INVITED,   // zaproszony przez organizatora — czeka na akceptację użytkownika
-        PENDING,   // użytkownik poprosił o dołączenie — czeka na akceptację organizatora
-        ACCEPTED,  // potwierdził udział
-        DECLINED   // odmówił / odrzucony
+        INVITED,  // zaproszony przez organizatora — czeka na akceptację użytkownika
+        PENDING,  // użytkownik poprosił o dołączenie — czeka na akceptację organizatora
+        ACCEPTED  // potwierdził udział
     }
 
     public enum MemberRole {

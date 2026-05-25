@@ -265,7 +265,6 @@ public class ExpeditionService {
                     case ACCEPTED -> m.getMemberRole() != null ? m.getMemberRole().name() : "MEMBER";
                     case INVITED  -> "INVITED";
                     case PENDING  -> "PENDING";
-                    case DECLINED -> "VISITOR";
                 })
                 .orElse("VISITOR");
     }
@@ -639,10 +638,11 @@ public class ExpeditionService {
             throw new IllegalArgumentException("Zaproszenie zostalo juz rozpatrzone");
         }
 
-        member.setStatus(accept
-                ? ExpeditionMember.MemberStatus.ACCEPTED
-                : ExpeditionMember.MemberStatus.DECLINED);
-
+        if (!accept) {
+            memberRepository.delete(member);
+            return member;
+        }
+        member.setStatus(ExpeditionMember.MemberStatus.ACCEPTED);
         return memberRepository.save(member);
     }
 
@@ -916,30 +916,33 @@ public class ExpeditionService {
         return switch (section.getSectionType()) {
             case ARRIVAL -> "Dojazd";
             case RETURN -> "Powrót";
-            case DAY_TRANSITION -> "Dzień " + section.getDayNumber();
+            case DAY_TRANSITION -> "Dzień " + section.getExpeditionDay().getDayNumber();
         };
     }
 
     private ExpeditionTransportSection getOrCreateSection(Expedition expedition, String type) {
         ExpeditionTransportSection.SectionType sectionType;
-        Integer dayNumber = null;
+        ExpeditionDay expeditionDay = null;
         if ("arrival".equals(type)) {
             sectionType = ExpeditionTransportSection.SectionType.ARRIVAL;
         } else if ("return".equals(type)) {
             sectionType = ExpeditionTransportSection.SectionType.RETURN;
         } else if (type != null && type.startsWith("day-")) {
             sectionType = ExpeditionTransportSection.SectionType.DAY_TRANSITION;
-            dayNumber = Integer.parseInt(type.substring(4));
+            int dayNumber = Integer.parseInt(type.substring(4));
+            expeditionDay = dayRepository.findByExpeditionIdAndDayNumber(expedition.getId(), dayNumber)
+                    .orElseThrow(() -> new IllegalArgumentException("Dzień " + dayNumber + " nie istnieje w tej wyprawie"));
         } else {
             throw new IllegalArgumentException("Nieznany typ sekcji transportu: " + type);
         }
-        Integer finalDayNumber = dayNumber;
+        ExpeditionDay finalDay = expeditionDay;
+        Long dayId = finalDay != null ? finalDay.getId() : null;
         return transportSectionRepository
-                .findByExpeditionIdAndSectionTypeAndDayNumber(expedition.getId(), sectionType, dayNumber)
+                .findByExpeditionIdAndSectionTypeAndExpeditionDayId(expedition.getId(), sectionType, dayId)
                 .orElseGet(() -> transportSectionRepository.save(ExpeditionTransportSection.builder()
                         .expedition(expedition)
                         .sectionType(sectionType)
-                        .dayNumber(finalDayNumber)
+                        .expeditionDay(finalDay)
                         .build()));
     }
 

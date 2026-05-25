@@ -8,11 +8,9 @@ import java.util.Optional;
 
 public interface ExpeditionTransportSectionRepository extends JpaRepository<ExpeditionTransportSection, Long> {
 
-    List<ExpeditionTransportSection> findByExpeditionIdOrderBySectionTypeAscDayNumberAsc(Long expeditionId);
-
-    Optional<ExpeditionTransportSection> findByExpeditionIdAndSectionTypeAndDayNumber(
+    Optional<ExpeditionTransportSection> findByExpeditionIdAndSectionTypeAndExpeditionDayId(
             Long expeditionId,
             ExpeditionTransportSection.SectionType sectionType,
-            Integer dayNumber);
+            Long expeditionDayId);
 
 }
