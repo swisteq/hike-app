@@ -4,6 +4,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import pl.gorskie.wyprawy.service.AccessDeniedException;
 import pl.gorskie.wyprawy.service.TrailNotFoundException;
 
 import java.time.LocalDateTime;
@@ -18,6 +19,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(TrailNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleNotFound(TrailNotFoundException e) {
         return error(HttpStatus.NOT_FOUND, e.getMessage());
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<Map<String, Object>> handleAccessDenied(AccessDeniedException e) {
+        return error(HttpStatus.FORBIDDEN, e.getMessage());
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

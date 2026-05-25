@@ -10,7 +10,6 @@ import pl.gorskie.wyprawy.model.Group;
 import pl.gorskie.wyprawy.model.GroupMember;
 import pl.gorskie.wyprawy.model.GroupMessage;
 import pl.gorskie.wyprawy.security.CurrentUserResolver;
-import pl.gorskie.wyprawy.service.ExpeditionService;
 import pl.gorskie.wyprawy.service.GroupService;
 
 import java.util.List;
@@ -127,15 +126,4 @@ public class GroupController {
         return ResponseEntity.status(HttpStatus.CREATED).body(GroupDto.MessageResponse.from(msg));
     }
 
-    @ExceptionHandler(ExpeditionService.AccessDeniedException.class)
-    public ResponseEntity<Map<String, Object>> handleAccessDenied(ExpeditionService.AccessDeniedException e) {
-        return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(Map.of("status", 403, "message", e.getMessage()));
-    }
-
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<Map<String, Object>> handleBadRequest(IllegalArgumentException e) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(Map.of("status", 400, "message", e.getMessage()));
-    }
 }

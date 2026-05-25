@@ -4,10 +4,21 @@ import { MapContainer, TileLayer, Polyline, Marker, Popup } from 'react-leaflet'
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-const FEATURE_COLORS = { T: '#2563eb', S: '#16a34a', H: '#0891b2', L: '#9333ea' };
+const FEATURE_COLORS = {
+  'T.PK': '#747887', 'T.PKLT': '#747887', 'T.MT': '#747887',
+  'T.PASS': '#747887', 'T.SADL': '#747887', 'T.RDG': '#747887',
+  'T.VAL': '#16a34a',
+  'S.HUT': '#92400e', 'S.RSRT': '#92400e',
+  'H.LK': '#2563eb', 'H.FLLS': '#2563eb', 'H.SPNG': '#2563eb',
+  'L.PRK': '#9333ea',
+};
 
-function makeLocationIcon(featureClass) {
-  const color = FEATURE_COLORS[featureClass] || '#6b7280';
+function getFeatureColor(featureClass, featureCode) {
+  return FEATURE_COLORS[`${featureClass}.${featureCode}`] || '#6b7280';
+}
+
+function makeLocationIcon(featureClass, featureCode) {
+  const color = getFeatureColor(featureClass, featureCode);
   return L.divIcon({
     className: '',
     html: `<div style="width:10px;height:10px;border-radius:50%;background:${color};border:2px solid white;box-shadow:0 1px 3px rgba(0,0,0,0.4)"></div>`,
@@ -36,12 +47,12 @@ import {
   pinComment, generateInviteLink, removeMember, leaveExpedition,
   joinExpedition, approveMember, searchUsers, cancelExpedition, markExpeditionCompleted, markExpeditionUnrealized,
   updateMemberRole, updateExpeditionEquipment, changeExpeditionTrail, getAuditLogs,
-  addDayTrail, getDayTrack, setDayAccommodation, removeDayAccommodation,
+  addDayTrail, clearDayTrail, getDayTrack, setDayAccommodation, removeDayAccommodation,
   addTransportOption, updateTransportOption, deleteTransportOption, approveTransportOption, resolvePlaceName,
+  deleteTransportSection,
 } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 
-const STATUS_OPTIONS = ['PLANNED', 'ONGOING', 'COMPLETED', 'CANCELLED', 'UNREALIZED'];
 const STATUS_LABELS = { PLANNED: 'Planowana', ONGOING: 'W trakcie', COMPLETED: 'Zakończona', CANCELLED: 'Odwołana', UNREALIZED: 'Niezrealizowana' };
 
 const EQUIPMENT_ITEMS = [
@@ -403,7 +414,7 @@ function OptionForm({ input, setInput, onSave, onCancel, saveLabel, loading }) {
 }
 
 // ---- Podsekcja transportu ----
-function TransportSectionBlock({ type, label, section, canAdd, canEdit, expeditionId, onRefresh }) {
+function TransportSectionBlock({ type, label, section, canAdd, canEdit, expeditionId, onRefresh, onDeleteSection }) {
   const [addingOption, setAddingOption] = useState(false);
   const [optionInput, setOptionInput] = useState(EMPTY_OPTION);
   const [editingOptionId, setEditingOptionId] = useState(null);
@@ -473,7 +484,15 @@ function TransportSectionBlock({ type, label, section, canAdd, canEdit, expediti
 
   return (
     <div className="border border-gray-300 rounded-lg p-3">
-      <div className="font-bold text-sm text-gray-700 mb-2">{label}</div>
+      <div className="flex items-center justify-between mb-2">
+        <span className="font-bold text-sm text-gray-700">{label}</span>
+        {onDeleteSection && canEdit && (
+          <button type="button" onClick={onDeleteSection}
+            className="text-xs text-gray-400 hover:text-red-500 border border-gray-200 hover:border-red-300 px-2 py-0.5 rounded transition-colors">
+            Usuń
+          </button>
+        )}
+      </div>
       {editingOptionId ? (
         <div className="mt-1">
           {section?.options?.map(opt => opt.id === editingOptionId ? (
@@ -644,6 +663,17 @@ export default function ExpeditionDetailPage() {
 
 
 
+  const handleClearDayTrail = async (dayNumber) => {
+    if (!window.confirm('Oznaczyć ten dzień jako dzień odpoczynku? Trasa i dane GPX zostaną usunięte.')) return;
+    try {
+      await clearDayTrail(id, dayNumber);
+      setDayTrackPoints([]);
+      refresh();
+    } catch {
+      alert('Błąd usuwania trasy dnia');
+    }
+  };
+
   const handleGenerateLink = async () => {
     setGeneratingLink(true);
     try {
@@ -771,7 +801,7 @@ export default function ExpeditionDetailPage() {
     }
   };
 
-  const handleToggleLogs = async () => {
+  const loadAndShowLogs = async () => {
     setLogsLoading(true);
     try {
       const { data } = await getAuditLogs(id);
@@ -803,7 +833,7 @@ export default function ExpeditionDetailPage() {
               Organizator: <span className="font-medium">{expedition.organizer?.name}</span>
             </p>
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap justify-end">
             <span className={`text-sm px-3 py-1.5 rounded-lg border font-medium ${
               expedition.status === 'PLANNED'   ? 'bg-blue-50 text-blue-700 border-blue-200' :
               expedition.status === 'ONGOING'   ? 'bg-green-50 text-green-700 border-green-200' :
@@ -812,15 +842,6 @@ export default function ExpeditionDetailPage() {
             }`}>
               {STATUS_LABELS[expedition.status]}
             </span>
-            {isOrganizer && (
-              <button
-                onClick={handleToggleLogs}
-                disabled={logsLoading}
-                className="text-sm text-gray-500 hover:text-gray-700 border border-gray-200 hover:border-gray-300 px-3 py-1.5 rounded-lg transition-colors"
-              >
-                {logsLoading ? 'Ładowanie...' : 'Logi zmian'}
-              </button>
-            )}
             {isOrganizer && (expedition.status === 'PLANNED' || expedition.status === 'ONGOING') && (
               <button
                 onClick={handleCancel}
@@ -910,7 +931,6 @@ export default function ExpeditionDetailPage() {
 
           // Dni pośrednie: wszystkie poza ostatnim
           const allInterDays = expedition.days?.length > 1 ? expedition.days.slice(0, -1) : [];
-          // Pokaż dzień jeśli ma już opcje w backendzie LUB użytkownik go dodał ręcznie
           const daysWithContent = new Set(
             sections.filter(s => s.sectionType === 'DAY_TRANSITION' && s.options?.length > 0)
                     .map(s => s.dayNumber)
@@ -932,16 +952,29 @@ export default function ExpeditionDetailPage() {
                 <div className="space-y-2">
                   <TransportSectionBlock {...sectionProps} type="arrival" label="Dojazd"
                     section={findSection('ARRIVAL')} />
-                  {visibleDays.map(day => (
-                    <TransportSectionBlock key={day.dayNumber} {...sectionProps}
-                      type={`day-${day.dayNumber}`}
-                      label={`Dzień ${day.dayNumber}`}
-                      section={findSection('DAY_TRANSITION', day.dayNumber)} />
-                  ))}
+                  {visibleDays.map(day => {
+                    const backendSection = findSection('DAY_TRANSITION', day.dayNumber);
+                    const handleDeleteDay = async () => {
+                      if (!window.confirm(`Usunąć sekcję "Dzień ${day.dayNumber}" wraz ze wszystkimi opcjami transportu?`)) return;
+                      if (backendSection) {
+                        try { await deleteTransportSection(id, backendSection.id); }
+                        catch { alert('Błąd usuwania sekcji transportu'); return; }
+                      }
+                      setAddedDayNumbers(prev => { const s = new Set(prev); s.delete(day.dayNumber); return s; });
+                      refresh();
+                    };
+                    return (
+                      <TransportSectionBlock key={day.dayNumber} {...sectionProps}
+                        type={`day-${day.dayNumber}`}
+                        label={`Dzień ${day.dayNumber}`}
+                        section={backendSection}
+                        onDeleteSection={handleDeleteDay} />
+                    );
+                  })}
                   <TransportSectionBlock {...sectionProps} type="return" label="Powrót"
                     section={findSection('RETURN')} />
-                  {canAddTransport && availableDays.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 pt-1">
+                  {canAddTransport && availableDays.length > 0 ? (
+                    <div className="flex flex-wrap gap-1.5 pt-1 items-center">
                       {availableDays.map(day => (
                         <button key={day.dayNumber} type="button"
                           onClick={() => setAddedDayNumbers(prev => new Set([...prev, day.dayNumber]))}
@@ -949,8 +982,23 @@ export default function ExpeditionDetailPage() {
                           + Dzień {day.dayNumber}
                         </button>
                       ))}
+                      {isOrganizer && (
+                        <button type="button" onClick={loadAndShowLogs} disabled={logsLoading}
+                          title="Logi zmian"
+                          className="ml-auto w-6 h-6 flex items-center justify-center rounded-full border border-gray-200 hover:border-gray-400 text-gray-400 hover:text-gray-600 text-xs font-bold transition-colors disabled:opacity-50">
+                          !
+                        </button>
+                      )}
                     </div>
-                  )}
+                  ) : isOrganizer ? (
+                    <div className="flex justify-end pt-1">
+                      <button type="button" onClick={loadAndShowLogs} disabled={logsLoading}
+                        title="Logi zmian"
+                        className="w-6 h-6 flex items-center justify-center rounded-full border border-gray-200 hover:border-gray-400 text-gray-400 hover:text-gray-600 text-xs font-bold transition-colors disabled:opacity-50">
+                        !
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
               )}
             </div>
@@ -1003,6 +1051,7 @@ export default function ExpeditionDetailPage() {
             </button>
           </div>
         )}
+
       </div>
 
       {/* Modal — logi zmian */}
@@ -1030,11 +1079,21 @@ export default function ExpeditionDetailPage() {
                     <div key={log.id} className="border-l-2 border-gray-100 pl-3">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                          log.changeType === 'TRAIL_CHANGED'
-                            ? 'bg-blue-50 text-blue-700'
-                            : 'bg-amber-50 text-amber-700'
+                          log.changeType === 'TRAIL_CHANGED'     ? 'bg-blue-50 text-blue-700' :
+                          log.changeType === 'DAY_TRAIL_CHANGED' ? 'bg-blue-50 text-blue-700' :
+                          log.changeType === 'DAY_TRAIL_CLEARED' ? 'bg-gray-100 text-gray-600' :
+                          log.changeType === 'EQUIPMENT_CHANGED' ? 'bg-amber-50 text-amber-700' :
+                          log.changeType === 'ACCOMMODATION_CHANGED' ? 'bg-purple-50 text-purple-700' :
+                          log.changeType === 'TRANSPORT_CHANGED' ? 'bg-green-50 text-green-700' :
+                          'bg-gray-100 text-gray-500'
                         }`}>
-                          {log.changeType === 'TRAIL_CHANGED' ? 'Zmiana trasy' : 'Zmiana sprzętu'}
+                          { log.changeType === 'TRAIL_CHANGED'         ? 'Trasa' :
+                            log.changeType === 'DAY_TRAIL_CHANGED'     ? 'Trasa dnia' :
+                            log.changeType === 'DAY_TRAIL_CLEARED'     ? 'Odpoczynek' :
+                            log.changeType === 'EQUIPMENT_CHANGED'     ? 'Sprzęt' :
+                            log.changeType === 'ACCOMMODATION_CHANGED' ? 'Nocleg' :
+                            log.changeType === 'TRANSPORT_CHANGED'     ? 'Transport' :
+                            log.changeType }
                         </span>
                         <span className="text-gray-500 text-xs">{log.user?.name}</span>
                         <span className="text-gray-400 text-xs ml-auto">
@@ -1122,12 +1181,20 @@ export default function ExpeditionDetailPage() {
             <div className="flex items-center justify-between mb-3">
               <h2 className="font-semibold text-gray-800">Trasa na mapie</h2>
               {canManageTrailAndEquipment && (
-                <button
-                  onClick={() => { setChangingTrail(true); setChangingTrailDay(selectedDayNumber); setTrailFile(null); setTrailFileError(''); }}
-                  className="text-xs text-mountain-600 hover:text-mountain-800"
-                >
-                  Zmień trasę dnia
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => { setChangingTrail(true); setChangingTrailDay(selectedDayNumber); setTrailFile(null); setTrailFileError(''); }}
+                    className="text-xs text-mountain-600 hover:text-mountain-800 border border-mountain-300 hover:border-mountain-500 px-2.5 py-1 rounded-lg"
+                  >
+                    Zmień trasę dnia
+                  </button>
+                  <button
+                    onClick={() => handleClearDayTrail(selectedDayNumber)}
+                    className="text-xs text-mountain-600 hover:text-mountain-800 border border-mountain-300 hover:border-mountain-500 px-2.5 py-1 rounded-lg"
+                  >
+                    Dzień odpoczynku
+                  </button>
+                </div>
               )}
             </div>
 
@@ -1152,15 +1219,26 @@ export default function ExpeditionDetailPage() {
             </div>
 
             {/* Statystyki dnia */}
-            {currentDay && (currentDay.distanceKm || currentDay.elevationGainM || currentDay.durationFormatted) && (
-              <div className="flex gap-4 mb-3 text-xs text-gray-500">
-                {currentDay.trailName && <span className="font-medium text-gray-700">{currentDay.trailName}</span>}
-                {currentDay.distanceKm && <span>Dystans: {currentDay.distanceKm} km</span>}
-                {currentDay.elevationGainM && <span>Podejście: +{currentDay.elevationGainM} m</span>}
-                {currentDay.elevationLossM && <span>Zejście: -{currentDay.elevationLossM} m</span>}
-                {currentDay.maxElevationM && <span>Maks. wys.: {currentDay.maxElevationM} m n.p.m.</span>}
-                {currentDay.durationFormatted && <span>Czas: {currentDay.durationFormatted}</span>}
-              </div>
+            {currentDay && (
+              <>
+                {(currentDay.trailName || currentDay.highestPeakName) && (
+                  <div className="flex gap-4 mb-1 text-xs text-gray-500">
+                    {currentDay.trailName && <span className="font-bold text-gray-700">{currentDay.trailName}</span>}
+                    {currentDay.highestPeakName && (
+                      <span className="text-mountain-700 font-medium">Najwyższy szczyt: {currentDay.highestPeakName}{currentDay.highestPeakElevationM ? ` (${currentDay.highestPeakElevationM} m)` : ''}</span>
+                    )}
+                  </div>
+                )}
+                {(currentDay.distanceKm || currentDay.elevationGainM || currentDay.durationFormatted || currentDay.maxElevationM) && (
+                  <div className="flex gap-4 mb-3 text-xs text-gray-500">
+                    {currentDay.distanceKm && <span>Dystans: {currentDay.distanceKm} km</span>}
+                    {currentDay.elevationGainM && <span>Podejście: +{currentDay.elevationGainM} m</span>}
+                    {currentDay.elevationLossM && <span>Zejście: -{currentDay.elevationLossM} m</span>}
+                    {currentDay.maxElevationM && <span>Maks. wys.: {currentDay.maxElevationM} m n.p.m.</span>}
+                    {currentDay.durationFormatted && <span>Czas: {currentDay.durationFormatted}</span>}
+                  </div>
+                )}
+              </>
             )}
 
             {pts.length > 0 ? (
@@ -1178,7 +1256,7 @@ export default function ExpeditionDetailPage() {
                       <Marker
                         key={loc.id}
                         position={[loc.latitude, loc.longitude]}
-                        icon={makeLocationIcon(loc.featureClass)}
+                        icon={makeLocationIcon(loc.featureClass, loc.featureCode)}
                       >
                         <Popup>
                           <div className="text-sm">
@@ -1220,7 +1298,7 @@ export default function ExpeditionDetailPage() {
                     <div key={loc.id} className="flex items-center gap-2 text-sm p-2 rounded-lg bg-gray-50">
                       <span
                         className="w-3 h-3 rounded-full shrink-0"
-                        style={{ backgroundColor: FEATURE_COLORS[loc.featureClass] || '#6b7280' }}
+                        style={{ backgroundColor: getFeatureColor(loc.featureClass, loc.featureCode) }}
                       />
                       <div className="min-w-0">
                         <div className="font-medium truncate text-xs">{loc.name}</div>
@@ -1240,7 +1318,7 @@ export default function ExpeditionDetailPage() {
                     <div className="flex gap-2">
                       <button
                         onClick={() => { setAccommodationForm(selectedDayNumber); setAccommodationInput(currentDay.accommodationUrl || currentDay.accommodationName || ''); }}
-                        className="text-xs text-gray-500 hover:text-gray-700 border border-gray-200 hover:border-gray-300 px-2.5 py-1 rounded-lg transition-colors"
+                        className="text-xs text-mountain-600 hover:text-mountain-800 border border-mountain-300 hover:border-mountain-500 px-2.5 py-1 rounded-lg"
                       >
                         Edytuj
                       </button>
@@ -1257,7 +1335,7 @@ export default function ExpeditionDetailPage() {
                   ) : (
                     <button
                       onClick={() => { setAccommodationForm(selectedDayNumber); setAccommodationInput(''); }}
-                      className="text-xs text-gray-500 hover:text-gray-700 border border-gray-200 hover:border-gray-300 px-2.5 py-1 rounded-lg transition-colors"
+                      className="text-xs text-mountain-600 hover:text-mountain-800 border border-mountain-300 hover:border-mountain-500 px-2.5 py-1 rounded-lg"
                     >
                       Dodaj nocleg
                     </button>
@@ -1332,7 +1410,7 @@ export default function ExpeditionDetailPage() {
             {canManageTrailAndEquipment && (
               <button
                 onClick={() => { setChangingTrail(true); setChangingTrailDay(null); setTrailFile(null); setTrailFileError(''); }}
-                className="text-xs text-mountain-600 hover:text-mountain-800"
+                className="text-xs text-mountain-600 hover:text-mountain-800 border border-mountain-300 hover:border-mountain-500 px-2.5 py-1 rounded-lg"
               >
                 Zmień trasę
               </button>
@@ -1351,7 +1429,7 @@ export default function ExpeditionDetailPage() {
                 <Marker
                   key={loc.id}
                   position={[loc.latitude, loc.longitude]}
-                  icon={makeLocationIcon(loc.featureClass)}
+                  icon={makeLocationIcon(loc.featureClass, loc.featureCode)}
                 >
                   <Popup>
                     <div className="text-sm">
@@ -1379,7 +1457,7 @@ export default function ExpeditionDetailPage() {
                   <div key={loc.id} className="flex items-center gap-2 text-sm p-2 rounded-lg bg-gray-50">
                     <span
                       className="w-3 h-3 rounded-full shrink-0"
-                      style={{ backgroundColor: FEATURE_COLORS[loc.featureClass] || '#6b7280' }}
+                      style={{ backgroundColor: getFeatureColor(loc.featureClass, loc.featureCode) }}
                     />
                     <div className="min-w-0">
                       <div className="font-medium truncate text-xs">{loc.name}</div>
@@ -1419,7 +1497,7 @@ export default function ExpeditionDetailPage() {
                   setEquipmentDraft(draft);
                   setEditingEquipment(true);
                 }}
-                className="text-xs text-mountain-600 hover:text-mountain-800"
+                className="text-xs text-mountain-600 hover:text-mountain-800 border border-mountain-300 hover:border-mountain-500 px-2.5 py-1 rounded-lg"
               >
                 Edytuj
               </button>

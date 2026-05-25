@@ -42,6 +42,10 @@ public class ExpeditionAuditLog {
 
     public enum ChangeType {
         TRAIL_CHANGED,
-        EQUIPMENT_CHANGED
+        EQUIPMENT_CHANGED,
+        DAY_TRAIL_CHANGED,
+        DAY_TRAIL_CLEARED,
+        ACCOMMODATION_CHANGED,
+        TRANSPORT_CHANGED
     }
 }

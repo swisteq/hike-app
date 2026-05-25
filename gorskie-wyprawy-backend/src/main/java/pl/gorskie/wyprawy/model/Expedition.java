@@ -44,11 +44,6 @@ public class Expedition {
     @Builder.Default
     private Visibility visibility = Visibility.PUBLIC;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "trail_id", nullable = true)
-    @ToString.Exclude
-    private Trail trail;
-
     @Column(name = "trail_name")
     private String trailName;
 
@@ -72,12 +67,6 @@ public class Expedition {
 
     @Column(name = "gpx_file_path")
     private String gpxFilePath;
-
-    @Column(name = "start_lat")
-    private Double startLat;
-
-    @Column(name = "start_lon")
-    private Double startLon;
 
     @Column(name = "invite_token", unique = true)
     private String inviteToken;

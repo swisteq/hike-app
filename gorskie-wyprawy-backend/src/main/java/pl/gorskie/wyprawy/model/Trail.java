@@ -10,8 +10,6 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Encja reprezentująca trasę górską zaimportowaną z pliku GPX.
@@ -72,10 +70,6 @@ public class Trail {
     @Column(name = "duration_minutes")
     private Integer durationMinutes;
 
-    /** Liczba punktów trackowych w GPX */
-    @Column(name = "track_points_count")
-    private Integer trackPointsCount;
-
     // --- Lokalizacja ---
 
     /**
@@ -83,12 +77,6 @@ public class Trail {
      * Dodawane ręcznie przy imporcie lub przez reverse geocoding.
      * Przechowywane jako tablica w PostgreSQL.
      */
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "trail_location_tags", joinColumns = @JoinColumn(name = "trail_id"))
-    @Column(name = "tag")
-    @Builder.Default
-    private List<String> locationTags = new ArrayList<>();
-
     /** Szerokość geograficzna punktu startowego */
     @Column(name = "start_lat")
     private Double startLat;
@@ -96,20 +84,6 @@ public class Trail {
     /** Długość geograficzna punktu startowego */
     @Column(name = "start_lon")
     private Double startLon;
-
-    // --- Granice bounding box (z <bounds> w GPX lub wyliczone) ---
-
-    @Column(name = "bbox_min_lat")
-    private Double bboxMinLat;
-
-    @Column(name = "bbox_max_lat")
-    private Double bboxMaxLat;
-
-    @Column(name = "bbox_min_lon")
-    private Double bboxMinLon;
-
-    @Column(name = "bbox_max_lon")
-    private Double bboxMaxLon;
 
     // --- Metadane ---
 

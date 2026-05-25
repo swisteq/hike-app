@@ -24,25 +24,6 @@ import java.util.List;
 public class ExpeditionDto {
 
     @Data
-    public static class CreateRequest {
-        @NotBlank(message = "Nazwa wyprawy jest wymagana")
-        private String name;
-
-        private String description;
-
-        @NotNull(message = "Data wyprawy jest wymagana")
-        @Future(message = "Data wyprawy musi byc w przyszlosci")
-        private LocalDate plannedDate;
-
-        @NotNull(message = "Trasa jest wymagana")
-        private Long trailId;
-
-        private Expedition.JoinMode joinMode;
-        private Expedition.Visibility visibility;
-        private LocalTime startTime;
-    }
-
-    @Data
     public static class UpdateRequest {
         private String name;
         private String description;
@@ -66,7 +47,6 @@ public class ExpeditionDto {
         private Expedition.Visibility visibility;
         private LocalTime startTime;
         private AuthDto.UserResponse organizer;
-        private TrailResponse trail;
         private List<MemberResponse> members;
         private List<CommentResponse> comments;
         private int memberCount;
@@ -101,20 +81,13 @@ public class ExpeditionDto {
             boolean fullAccess = "ORGANIZER".equals(viewerRole) || "MEMBER".equals(viewerRole)
                     || "NAWIGATOR".equals(viewerRole) || "LOGISTYK".equals(viewerRole);
 
-            String tName = e.getTrailName() != null ? e.getTrailName()
-                    : (e.getTrail() != null ? e.getTrail().getName() : null);
-            Double dist = e.getDistanceKm() != null ? e.getDistanceKm()
-                    : (e.getTrail() != null ? e.getTrail().getDistanceKm() : null);
-            Integer gain = e.getElevationGainM() != null ? e.getElevationGainM()
-                    : (e.getTrail() != null ? e.getTrail().getElevationGainM() : null);
-            Integer loss = e.getElevationLossM() != null ? e.getElevationLossM()
-                    : (e.getTrail() != null ? e.getTrail().getElevationLossM() : null);
-            Integer maxEl = e.getMaxElevationM() != null ? e.getMaxElevationM()
-                    : (e.getTrail() != null ? e.getTrail().getMaxElevationM() : null);
-            Integer minEl = e.getMinElevationM() != null ? e.getMinElevationM()
-                    : (e.getTrail() != null ? e.getTrail().getMinElevationM() : null);
-            Integer dur = e.getDurationMinutes() != null ? e.getDurationMinutes()
-                    : (e.getTrail() != null ? e.getTrail().getDurationMinutes() : null);
+            String tName = e.getTrailName();
+            Double dist = e.getDistanceKm();
+            Integer gain = e.getElevationGainM();
+            Integer loss = e.getElevationLossM();
+            Integer maxEl = e.getMaxElevationM();
+            Integer minEl = e.getMinElevationM();
+            Integer dur = e.getDurationMinutes();
 
             // Dla wypraw wielodniowych: agreguj statystyki ze wszystkich dni
             if (!e.getDays().isEmpty()) {
@@ -159,7 +132,6 @@ public class ExpeditionDto {
                     .visibility(e.getVisibility())
                     .startTime(e.getStartTime())
                     .organizer(AuthDto.UserResponse.from(e.getOrganizer()))
-                    .trail(e.getTrail() != null ? TrailResponse.from(e.getTrail()) : null)
                     .members(fullAccess
                             ? e.getMembers().stream().map(MemberResponse::from).toList()
                             : null)
@@ -215,9 +187,7 @@ public class ExpeditionDto {
             String peak  = e.getHighestPeakName();
 
             if (start == null && end == null) {
-                // Brak danych GeoNames — fallback do nazwy trasy z GPX
-                return e.getTrailName() != null ? e.getTrailName()
-                        : (e.getTrail() != null ? e.getTrail().getName() : null);
+                return e.getTrailName();
             }
 
             boolean loop = start != null && start.equals(end);
@@ -385,6 +355,8 @@ public class ExpeditionDto {
         private boolean hasTrack;
         private String accommodationName;
         private String accommodationUrl;
+        private String highestPeakName;
+        private Integer highestPeakElevationM;
 
         public static DayResponse from(ExpeditionDay day) {
             Integer dur = day.getDurationMinutes();
@@ -403,6 +375,8 @@ public class ExpeditionDto {
                     .hasTrack(day.getGpxFilePath() != null)
                     .accommodationName(day.getAccommodationName())
                     .accommodationUrl(day.getAccommodationUrl())
+                    .highestPeakName(day.getHighestPeakName())
+                    .highestPeakElevationM(day.getHighestPeakElevationM())
                     .build();
         }
     }

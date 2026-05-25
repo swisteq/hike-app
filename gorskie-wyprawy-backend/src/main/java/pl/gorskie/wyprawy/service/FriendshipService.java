@@ -65,7 +65,7 @@ public class FriendshipService {
                 .orElseThrow(() -> new IllegalArgumentException("Zaproszenie nie istnieje"));
 
         if (!friendship.getAddressee().getId().equals(addresseeId)) {
-            throw new ExpeditionService.AccessDeniedException("Brak uprawnień");
+            throw new AccessDeniedException("Brak uprawnień");
         }
         if (friendship.getStatus() != Friendship.FriendshipStatus.PENDING) {
             throw new IllegalArgumentException("Zaproszenie zostało już rozpatrzone");

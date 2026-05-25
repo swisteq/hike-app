@@ -17,7 +17,6 @@ export default function TrailsPage() {
 
   const [filters, setFilters] = useState({
     name: '',
-    locationTag: '',
     minDistance: '',
     maxDistance: '',
     minElevation: '',
@@ -77,13 +76,6 @@ export default function TrailsPage() {
             placeholder="Szukaj po nazwie..."
             value={filters.name}
             onChange={e => updateFilter('name', e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-mountain-400"
-          />
-          <input
-            type="text"
-            placeholder="Lokalizacja (np. Tatry, Kuźnice)"
-            value={filters.locationTag}
-            onChange={e => updateFilter('locationTag', e.target.value)}
             className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-mountain-400"
           />
           <div className="flex gap-2">

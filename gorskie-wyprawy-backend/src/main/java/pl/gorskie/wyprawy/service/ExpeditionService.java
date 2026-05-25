@@ -9,18 +9,40 @@ import pl.gorskie.wyprawy.dto.ExpeditionDto;
 import pl.gorskie.wyprawy.dto.GpxParseResult;
 import pl.gorskie.wyprawy.model.*;
 import pl.gorskie.wyprawy.model.Notification.NotificationType;
-import pl.gorskie.wyprawy.repository.ExpeditionRepository;
-import pl.gorskie.wyprawy.repository.ExpeditionMemberRepository;
+import pl.gorskie.wyprawy.repository.ExpeditionAuditLogRepository;
 import pl.gorskie.wyprawy.repository.ExpeditionCommentRepository;
+import pl.gorskie.wyprawy.repository.ExpeditionDayRepository;
+import pl.gorskie.wyprawy.repository.ExpeditionEquipmentRepository;
+import pl.gorskie.wyprawy.repository.ExpeditionLocationRepository;
+import pl.gorskie.wyprawy.repository.ExpeditionMemberRepository;
+import pl.gorskie.wyprawy.repository.ExpeditionRepository;
+import pl.gorskie.wyprawy.repository.ExpeditionTransportOptionRepository;
+import pl.gorskie.wyprawy.repository.ExpeditionTransportSectionRepository;
 import pl.gorskie.wyprawy.repository.FriendshipRepository;
 import pl.gorskie.wyprawy.repository.GroupRepository;
 import pl.gorskie.wyprawy.repository.UserRepository;
 import pl.gorskie.wyprawy.service.gpx.GpxParserService;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -37,34 +59,16 @@ public class ExpeditionService {
     private final TrailService trailService;
     private final GpxParserService gpxParserService;
     private final LocationRecognitionService locationRecognitionService;
-    private final pl.gorskie.wyprawy.repository.ExpeditionEquipmentRepository equipmentRepository;
-    private final pl.gorskie.wyprawy.repository.ExpeditionAuditLogRepository auditLogRepository;
-    private final pl.gorskie.wyprawy.repository.ExpeditionDayRepository dayRepository;
-    private final pl.gorskie.wyprawy.repository.ExpeditionTransportSectionRepository transportSectionRepository;
-    private final pl.gorskie.wyprawy.repository.ExpeditionTransportOptionRepository transportOptionRepository;
-
-    @Transactional
-    public Expedition create(ExpeditionDto.CreateRequest request, Long organizerId) {
-        User organizer = findUser(organizerId);
-        Trail trail = trailService.findById(request.getTrailId());
-
-        Expedition expedition = Expedition.builder()
-                .name(request.getName())
-                .description(request.getDescription())
-                .plannedDate(request.getPlannedDate())
-                .startTime(request.getStartTime())
-                .trail(trail)
-                .organizer(organizer)
-                .joinMode(request.getJoinMode() != null ? request.getJoinMode() : Expedition.JoinMode.AUTO)
-                .visibility(request.getVisibility() != null ? request.getVisibility() : Expedition.Visibility.PUBLIC)
-                .build();
-
-        return expeditionRepository.save(expedition);
-    }
+    private final ExpeditionEquipmentRepository equipmentRepository;
+    private final ExpeditionAuditLogRepository auditLogRepository;
+    private final ExpeditionDayRepository dayRepository;
+    private final ExpeditionTransportSectionRepository transportSectionRepository;
+    private final ExpeditionTransportOptionRepository transportOptionRepository;
+    private final ExpeditionLocationRepository locationRepository;
 
     @Transactional
     public Expedition createFromGpx(MultipartFile file, String name, LocalDate plannedDate,
-                                    java.time.LocalTime startTime, String description,
+                                    LocalTime startTime, String description,
                                     Expedition.JoinMode joinMode, Expedition.Visibility visibility,
                                     Long organizerId) throws IOException {
         trailService.validateGpxFile(file);
@@ -91,8 +95,6 @@ public class ExpeditionService {
                 .minElevationM(parsed.getMinElevationM())
                 .durationMinutes(parsed.getDurationMinutes())
                 .gpxFilePath(gpxPath)
-                .startLat(parsed.getStartLat())
-                .startLon(parsed.getStartLon())
                 .bboxMinLat(parsed.getBboxMinLat())
                 .bboxMaxLat(parsed.getBboxMaxLat())
                 .bboxMinLon(parsed.getBboxMinLon())
@@ -102,15 +104,7 @@ public class ExpeditionService {
                 .build();
 
         Expedition saved = expeditionRepository.save(expedition);
-
-        List<double[]> trackPoints = List.of();
-        try (java.io.InputStream is = java.nio.file.Files.newInputStream(java.nio.file.Paths.get(gpxPath))) {
-            trackPoints = gpxParserService.parseTrackPoints(is);
-        } catch (Exception e) {
-            log.warn("Nie udało się odczytać punktów trasy dla rozpoznawania lokalizacji: {}", e.getMessage());
-        }
-        locationRecognitionService.recognizeAndSave(saved, trackPoints);
-
+        locationRecognitionService.recognizeAndSave(saved, readTrackPoints(gpxPath));
         return saved;
     }
 
@@ -170,15 +164,6 @@ public class ExpeditionService {
         day.setMinElevationM(parsed.getMinElevationM());
         day.setDurationMinutes(parsed.getDurationMinutes());
         day.setGpxFilePath(gpxPath);
-        day.setStartLat(parsed.getStartLat());
-        day.setStartLon(parsed.getStartLon());
-        day.setBboxMinLat(parsed.getBboxMinLat());
-        day.setBboxMaxLat(parsed.getBboxMaxLat());
-        day.setBboxMinLon(parsed.getBboxMinLon());
-        day.setBboxMaxLon(parsed.getBboxMaxLon());
-        day.setStartLocationName(parsed.getStartWaypointName());
-        day.setEndLocationName(parsed.getEndWaypointName());
-
         ExpeditionDay saved = dayRepository.save(day);
 
         // Rozszerzamy bounding box ekspedycji o obszar tego dnia (potrzebne do rozpoznawania lokalizacji)
@@ -192,15 +177,36 @@ public class ExpeditionService {
                 : Math.max(expedition.getBboxMaxLon(), parsed.getBboxMaxLon()));
         Expedition savedExp = expeditionRepository.save(expedition);
 
-        // Rozpoznaj lokalizacje dla tego dnia
-        List<double[]> trackPoints = java.util.List.of();
-        try (java.io.InputStream is = java.nio.file.Files.newInputStream(java.nio.file.Paths.get(gpxPath))) {
-            trackPoints = gpxParserService.parseTrackPoints(is);
-        } catch (Exception e) {
-            log.warn("Nie udało się odczytać punktów trasy dnia {}: {}", dayNumber, e.getMessage());
-        }
-        locationRecognitionService.recognizeAndSave(savedExp, trackPoints, dayNumber);
+        locationRecognitionService.recognizeAndSave(savedExp, readTrackPoints(gpxPath), dayNumber, saved);
+        logChange(savedExp, findUser(userId), ExpeditionAuditLog.ChangeType.DAY_TRAIL_CHANGED,
+                "Wgrano trasę dnia " + dayNumber + ": " + parsed.getName());
+        return saved;
+    }
 
+    @Transactional
+    public ExpeditionDay clearDayTrail(Long expeditionId, int dayNumber, Long userId) {
+        Expedition expedition = findAndCheckOrganizerOrNavigator(expeditionId, userId);
+        ExpeditionDay day = dayRepository.findByExpeditionIdAndDayNumber(expeditionId, dayNumber)
+                .orElseThrow(() -> new IllegalArgumentException("Dzień " + dayNumber + " nie istnieje w tej wyprawie"));
+
+        String oldTrail = day.getTrailName();
+        day.setTrailName(null);
+        day.setDistanceKm(null);
+        day.setElevationGainM(null);
+        day.setElevationLossM(null);
+        day.setMaxElevationM(null);
+        day.setMinElevationM(null);
+        day.setDurationMinutes(null);
+        day.setGpxFilePath(null);
+        day.setHighestPeakName(null);
+        day.setHighestPeakElevationM(null);
+
+        locationRepository.deleteByExpeditionIdAndDayNumber(expeditionId, dayNumber);
+
+        ExpeditionDay saved = dayRepository.save(day);
+        String desc = "Dzień " + dayNumber + " oznaczony jako dzień odpoczynku"
+                + (oldTrail != null ? " (usunięto trasę: " + oldTrail + ")" : "");
+        logChange(expedition, findUser(userId), ExpeditionAuditLog.ChangeType.DAY_TRAIL_CLEARED, desc);
         return saved;
     }
 
@@ -211,10 +217,10 @@ public class ExpeditionService {
 
         if (day.getGpxFilePath() == null) return List.of();
 
-        java.nio.file.Path path = java.nio.file.Paths.get(day.getGpxFilePath());
-        if (!java.nio.file.Files.exists(path)) return List.of();
+        Path path = Paths.get(day.getGpxFilePath());
+        if (!Files.exists(path)) return List.of();
 
-        try (java.io.InputStream is = java.nio.file.Files.newInputStream(path)) {
+        try (InputStream is = Files.newInputStream(path)) {
             return gpxParserService.parseTrackPoints(is);
         }
     }
@@ -240,7 +246,7 @@ public class ExpeditionService {
     }
 
     @Transactional(readOnly = true)
-    public Expedition findById(Long id, Long userId) {
+    public Expedition findById(Long id) {
         return expeditionRepository.findById(id)
                 .orElseThrow(() -> new TrailNotFoundException(id));
     }
@@ -260,27 +266,24 @@ public class ExpeditionService {
     }
 
     @Transactional
-    public Expedition updateEquipment(Long expeditionId, java.util.List<ExpeditionDto.EquipmentItemRequest> items, Long userId) {
+    public Expedition updateEquipment(Long expeditionId, List<ExpeditionDto.EquipmentItemRequest> items, Long userId) {
         Expedition expedition = findAndCheckOrganizerOrNavigator(expeditionId, userId);
 
         // Przechwytujemy stary stan jako niezmienną mapę — PRZED jakimikolwiek mutacjami encji
-        java.util.Map<ExpeditionEquipment.EquipmentItem, ExpeditionEquipment.RequirementLevel> oldSnapshot =
-                expedition.getEquipment().stream().collect(java.util.stream.Collectors.toMap(
+        Map<ExpeditionEquipment.EquipmentItem, ExpeditionEquipment.RequirementLevel> oldSnapshot =
+                expedition.getEquipment().stream().collect(Collectors.toMap(
                         ExpeditionEquipment::getItem, ExpeditionEquipment::getLevel));
 
-        java.util.Map<ExpeditionEquipment.EquipmentItem, ExpeditionEquipment.RequirementLevel> newMap =
-                items.stream().collect(java.util.stream.Collectors.toMap(
+        Map<ExpeditionEquipment.EquipmentItem, ExpeditionEquipment.RequirementLevel> newMap =
+                items.stream().collect(Collectors.toMap(
                         req -> ExpeditionEquipment.EquipmentItem.valueOf(req.getItem()),
                         req -> ExpeditionEquipment.RequirementLevel.valueOf(req.getLevel())));
 
-        // Usuń elementy, których nie ma w nowej liście
         expedition.getEquipment().removeIf(eq -> !newMap.containsKey(eq.getItem()));
-        // Zaktualizuj poziom istniejących elementów
         expedition.getEquipment().forEach(eq -> eq.setLevel(newMap.get(eq.getItem())));
-        // Dodaj nowe elementy (których jeszcze nie ma)
-        java.util.Set<ExpeditionEquipment.EquipmentItem> existing =
+        Set<ExpeditionEquipment.EquipmentItem> existing =
                 expedition.getEquipment().stream().map(ExpeditionEquipment::getItem)
-                        .collect(java.util.stream.Collectors.toSet());
+                        .collect(Collectors.toSet());
         newMap.forEach((item, level) -> {
             if (!existing.contains(item)) {
                 expedition.getEquipment().add(ExpeditionEquipment.builder()
@@ -297,19 +300,17 @@ public class ExpeditionService {
     }
 
     @Transactional
-    public Expedition changeTrail(Long expeditionId, org.springframework.web.multipart.MultipartFile file, Long userId) throws java.io.IOException {
+    public Expedition changeTrail(Long expeditionId, MultipartFile file, Long userId) throws IOException {
         Expedition expedition = findAndCheckOrganizerOrNavigator(expeditionId, userId);
         trailService.validateGpxFile(file);
 
-        String oldName = expedition.getTrailName() != null ? expedition.getTrailName()
-                : (expedition.getTrail() != null ? expedition.getTrail().getName() : "nieznana");
+        String oldName = expedition.getTrailName() != null ? expedition.getTrailName() : "nieznana";
 
         String fallbackName = file.getOriginalFilename() != null
                 ? file.getOriginalFilename().replaceAll("(?i)\\.gpx$", "") : "Nieznana trasa";
         GpxParseResult parsed = gpxParserService.parse(file.getInputStream(), fallbackName);
         String gpxPath = trailService.saveGpxFile(file);
 
-        expedition.setTrail(null);
         expedition.setTrailName(parsed.getName());
         expedition.setDistanceKm(parsed.getDistanceKm());
         expedition.setElevationGainM(parsed.getElevationGainM());
@@ -318,8 +319,6 @@ public class ExpeditionService {
         expedition.setMinElevationM(parsed.getMinElevationM());
         expedition.setDurationMinutes(parsed.getDurationMinutes());
         expedition.setGpxFilePath(gpxPath);
-        expedition.setStartLat(parsed.getStartLat());
-        expedition.setStartLon(parsed.getStartLon());
         expedition.setBboxMinLat(parsed.getBboxMinLat());
         expedition.setBboxMaxLat(parsed.getBboxMaxLat());
         expedition.setBboxMinLon(parsed.getBboxMinLon());
@@ -331,28 +330,20 @@ public class ExpeditionService {
         expedition.getLocations().clear();
 
         Expedition saved = expeditionRepository.save(expedition);
+        locationRecognitionService.recognizeAndSave(saved, readTrackPoints(gpxPath));
 
-        java.util.List<double[]> trackPoints = java.util.List.of();
-        try (java.io.InputStream is = java.nio.file.Files.newInputStream(java.nio.file.Paths.get(gpxPath))) {
-            trackPoints = gpxParserService.parseTrackPoints(is);
-        } catch (Exception e) {
-            log.warn("Nie udało się odczytać punktów trasy: {}", e.getMessage());
-        }
-        locationRecognitionService.recognizeAndSave(saved, trackPoints);
-
-        String newName = parsed.getName();
         logChange(saved, findUser(userId), ExpeditionAuditLog.ChangeType.TRAIL_CHANGED,
-                "Zmieniono trasę z \"" + oldName + "\" na \"" + newName + "\"");
+                "Zmieniono trasę z \"" + oldName + "\" na \"" + parsed.getName() + "\"");
 
         return expeditionRepository.findById(expeditionId).orElse(saved);
     }
 
     @Transactional(readOnly = true)
-    public java.util.List<ExpeditionAuditLog> getAuditLogs(Long expeditionId, Long userId) {
+    public List<ExpeditionAuditLog> getAuditLogs(Long expeditionId, Long userId) {
         Expedition expedition = expeditionRepository.findById(expeditionId)
                 .orElseThrow(() -> new TrailNotFoundException(expeditionId));
         String role = resolveViewerRole(expedition, userId);
-        if (!java.util.List.of("ORGANIZER", "MEMBER", "NAWIGATOR", "LOGISTYK").contains(role)) {
+        if (!List.of("ORGANIZER", "MEMBER", "NAWIGATOR", "LOGISTYK").contains(role)) {
             throw new AccessDeniedException("Brak dostępu do logów zmian");
         }
         return auditLogRepository.findByExpeditionIdOrderByCreatedAtDesc(expeditionId);
@@ -395,13 +386,13 @@ public class ExpeditionService {
             case PUBLIC -> true;
             case FRIENDS_ONLY -> viewerId != null && friendshipRepository
                     .findBetween(e.getOrganizer().getId(), viewerId)
-                    .map(f -> f.getStatus() == pl.gorskie.wyprawy.model.Friendship.FriendshipStatus.ACCEPTED)
+                    .map(f -> f.getStatus() == Friendship.FriendshipStatus.ACCEPTED)
                     .orElse(false);
             case GROUPS_ONLY -> viewerId != null &&
                     groupRepository.existsSharedGroup(e.getOrganizer().getId(), viewerId);
             case FRIENDS_AND_GROUPS -> viewerId != null && (
                     friendshipRepository.findBetween(e.getOrganizer().getId(), viewerId)
-                            .map(f -> f.getStatus() == pl.gorskie.wyprawy.model.Friendship.FriendshipStatus.ACCEPTED)
+                            .map(f -> f.getStatus() == Friendship.FriendshipStatus.ACCEPTED)
                             .orElse(false)
                     || groupRepository.existsSharedGroup(e.getOrganizer().getId(), viewerId));
         };
@@ -452,9 +443,9 @@ public class ExpeditionService {
     }
 
     private boolean isStatusDeclarationWindowOpen(Expedition expedition) {
-        java.time.LocalDate lastDay = expedition.getEndDate() != null
+        LocalDate lastDay = expedition.getEndDate() != null
                 ? expedition.getEndDate() : expedition.getPlannedDate();
-        return java.time.LocalDateTime.now().isAfter(lastDay.plusDays(1).atStartOfDay());
+        return LocalDateTime.now().isAfter(lastDay.plusDays(1).atStartOfDay());
     }
 
     void notifyExpeditionMembers(Expedition expedition, String message) {
@@ -529,16 +520,14 @@ public class ExpeditionService {
         Expedition expedition = expeditionRepository.findById(expeditionId)
                 .orElseThrow(() -> new TrailNotFoundException(expeditionId));
 
-        String gpxPath = expedition.getGpxFilePath() != null
-                ? expedition.getGpxFilePath()
-                : (expedition.getTrail() != null ? expedition.getTrail().getGpxFilePath() : null);
+        String gpxPath = expedition.getGpxFilePath();
 
         if (gpxPath == null) return List.of();
 
-        java.nio.file.Path path = java.nio.file.Paths.get(gpxPath);
-        if (!java.nio.file.Files.exists(path)) return List.of();
+        Path path = Paths.get(gpxPath);
+        if (!Files.exists(path)) return List.of();
 
-        try (java.io.InputStream is = java.nio.file.Files.newInputStream(path)) {
+        try (InputStream is = Files.newInputStream(path)) {
             return gpxParserService.parseTrackPoints(is);
         }
     }
@@ -689,8 +678,8 @@ public class ExpeditionService {
 
     // --- Helpers ---
 
-    private static final java.util.Map<ExpeditionEquipment.EquipmentItem, String> EQUIPMENT_LABELS =
-            java.util.Map.of(
+    private static final Map<ExpeditionEquipment.EquipmentItem, String> EQUIPMENT_LABELS =
+            Map.of(
                     ExpeditionEquipment.EquipmentItem.RACZKI,                   "Raczki",
                     ExpeditionEquipment.EquipmentItem.RAKI,                     "Raki",
                     ExpeditionEquipment.EquipmentItem.CZEKAN,                   "Czekan",
@@ -703,10 +692,10 @@ public class ExpeditionService {
             );
 
     private String buildEquipmentDiff(
-            java.util.Map<ExpeditionEquipment.EquipmentItem, ExpeditionEquipment.RequirementLevel> oldMap,
-            java.util.Map<ExpeditionEquipment.EquipmentItem, ExpeditionEquipment.RequirementLevel> newMap) {
+            Map<ExpeditionEquipment.EquipmentItem, ExpeditionEquipment.RequirementLevel> oldMap,
+            Map<ExpeditionEquipment.EquipmentItem, ExpeditionEquipment.RequirementLevel> newMap) {
 
-        java.util.List<String> parts = new java.util.ArrayList<>();
+        List<String> parts = new ArrayList<>();
 
         newMap.forEach((item, level) -> {
             String label = EQUIPMENT_LABELS.getOrDefault(item, item.name());
@@ -739,8 +728,9 @@ public class ExpeditionService {
     }
 
     @Transactional
-    public ExpeditionDto.DayResponse setAccommodation(Long expeditionId, int dayNumber, ExpeditionDto.AccommodationRequest request, Long userId) {
-        findAndCheckOrganizerOrLogistyk(expeditionId, userId);
+    public ExpeditionDto.DayResponse setAccommodation(Long expeditionId, int dayNumber,
+                                                       ExpeditionDto.AccommodationRequest request, Long userId) {
+        Expedition expedition = findAndCheckOrganizerOrLogistyk(expeditionId, userId);
         ExpeditionDay day = dayRepository.findByExpeditionIdAndDayNumber(expeditionId, dayNumber)
                 .orElseThrow(() -> new IllegalArgumentException("Dzień " + dayNumber + " nie istnieje"));
 
@@ -755,39 +745,51 @@ public class ExpeditionService {
             }
         }
 
+        String oldName = day.getAccommodationName();
         day.setAccommodationName(name);
         day.setAccommodationUrl(url);
-        return ExpeditionDto.DayResponse.from(dayRepository.save(day));
+        ExpeditionDto.DayResponse result = ExpeditionDto.DayResponse.from(dayRepository.save(day));
+        String desc = oldName != null
+                ? "Zmieniono nocleg dnia " + dayNumber + " z \"" + oldName + "\" na \"" + name + "\""
+                : "Dodano nocleg dnia " + dayNumber + ": " + name;
+        logChange(expedition, findUser(userId), ExpeditionAuditLog.ChangeType.ACCOMMODATION_CHANGED, desc);
+        return result;
     }
 
     @Transactional
     public ExpeditionDto.DayResponse removeAccommodation(Long expeditionId, int dayNumber, Long userId) {
-        findAndCheckOrganizerOrLogistyk(expeditionId, userId);
+        Expedition expedition = findAndCheckOrganizerOrLogistyk(expeditionId, userId);
         ExpeditionDay day = dayRepository.findByExpeditionIdAndDayNumber(expeditionId, dayNumber)
                 .orElseThrow(() -> new IllegalArgumentException("Dzień " + dayNumber + " nie istnieje"));
+        String oldName = day.getAccommodationName();
         day.setAccommodationName(null);
         day.setAccommodationUrl(null);
-        return ExpeditionDto.DayResponse.from(dayRepository.save(day));
+        ExpeditionDto.DayResponse result = ExpeditionDto.DayResponse.from(dayRepository.save(day));
+        logChange(expedition, findUser(userId), ExpeditionAuditLog.ChangeType.ACCOMMODATION_CHANGED,
+                "Usunięto nocleg dnia " + dayNumber + (oldName != null ? " (" + oldName + ")" : ""));
+        return result;
     }
 
     @Transactional
-    public ExpeditionDto.TransportSectionResponse addTransportOption(Long expeditionId, String type, ExpeditionDto.TransportOptionRequest req, Long userId) {
+    public ExpeditionDto.TransportSectionResponse addTransportOption(Long expeditionId, String type,
+                                                                      ExpeditionDto.TransportOptionRequest req, Long userId) {
         Expedition expedition = expeditionRepository.findById(expeditionId)
                 .orElseThrow(() -> new TrailNotFoundException(expeditionId));
         if (req.getTransportType() == null)
             throw new IllegalArgumentException("Rodzaj transportu jest wymagany");
         if (req.getDescription() == null || req.getDescription().isBlank())
             throw new IllegalArgumentException("Opis opcji transportu jest wymagany");
-        if (req.getTransportType() == ExpeditionTransportOption.TransportType.CAR) {
-            if (req.getSeats() == null || req.getSeats() < 1)
-                throw new IllegalArgumentException("Liczba miejsc jest wymagana dla transportu samochodem");
-        }
+        if (req.getTransportType() == ExpeditionTransportOption.TransportType.CAR
+                && (req.getSeats() == null || req.getSeats() < 1))
+            throw new IllegalArgumentException("Liczba miejsc jest wymagana dla transportu samochodem");
+
         boolean isPrivileged = isOrganizerOrLogistyk(expedition, userId);
         if (!isPrivileged && !isAcceptedMember(expedition, userId))
             throw new AccessDeniedException("Musisz być uczestnikiem wyprawy");
+
         String driverUsername = null;
         if (req.getTransportType() == ExpeditionTransportOption.TransportType.CAR) {
-            driverUsername = userRepository.findById(userId).map(u -> u.getName()).orElse(null);
+            driverUsername = userRepository.findById(userId).map(User::getName).orElse(null);
         }
         ExpeditionTransportSection section = getOrCreateSection(expedition, type);
         ExpeditionTransportOption option = ExpeditionTransportOption.builder()
@@ -801,7 +803,11 @@ public class ExpeditionService {
                 .build();
         applyMeetingPoint(option, req.getMeetingPoint());
         section.getOptions().add(option);
-        return ExpeditionDto.TransportSectionResponse.from(transportSectionRepository.save(section));
+        ExpeditionDto.TransportSectionResponse result =
+                ExpeditionDto.TransportSectionResponse.from(transportSectionRepository.save(section));
+        logChange(expedition, findUser(userId), ExpeditionAuditLog.ChangeType.TRANSPORT_CHANGED,
+                "Dodano transport [" + transportSectionLabel(section) + "]: " + req.getDescription().trim());
+        return result;
     }
 
     @Transactional
@@ -817,16 +823,17 @@ public class ExpeditionService {
     }
 
     @Transactional
-    public ExpeditionDto.TransportSectionResponse updateTransportOption(Long expeditionId, Long optionId, ExpeditionDto.TransportOptionRequest req, Long userId) {
+    public ExpeditionDto.TransportSectionResponse updateTransportOption(Long expeditionId, Long optionId,
+                                                                         ExpeditionDto.TransportOptionRequest req, Long userId) {
         findAndCheckOrganizerOrLogistyk(expeditionId, userId);
         if (req.getTransportType() == null)
             throw new IllegalArgumentException("Rodzaj transportu jest wymagany");
         if (req.getDescription() == null || req.getDescription().isBlank())
             throw new IllegalArgumentException("Opis opcji transportu jest wymagany");
-        if (req.getTransportType() == ExpeditionTransportOption.TransportType.CAR) {
-            if (req.getSeats() == null || req.getSeats() < 1)
-                throw new IllegalArgumentException("Liczba miejsc jest wymagana dla transportu samochodem");
-        }
+        if (req.getTransportType() == ExpeditionTransportOption.TransportType.CAR
+                && (req.getSeats() == null || req.getSeats() < 1))
+            throw new IllegalArgumentException("Liczba miejsc jest wymagana dla transportu samochodem");
+
         ExpeditionTransportOption option = transportOptionRepository.findById(optionId)
                 .orElseThrow(() -> new IllegalArgumentException("Opcja transportu nie istnieje"));
         if (!option.getSection().getExpedition().getId().equals(expeditionId))
@@ -837,11 +844,13 @@ public class ExpeditionService {
         option.setUrl(req.getUrl() != null && !req.getUrl().isBlank() ? req.getUrl().trim() : null);
         option.setSeats(req.getTransportType() == ExpeditionTransportOption.TransportType.CAR ? req.getSeats() : null);
         if (req.getTransportType() == ExpeditionTransportOption.TransportType.CAR && option.getDriverUsername() == null) {
-            option.setDriverUsername(userRepository.findById(userId).map(u -> u.getName()).orElse(null));
+            option.setDriverUsername(userRepository.findById(userId).map(User::getName).orElse(null));
         } else if (req.getTransportType() != ExpeditionTransportOption.TransportType.CAR) {
             option.setDriverUsername(null);
         }
         transportOptionRepository.save(option);
+        logChange(option.getSection().getExpedition(), findUser(userId), ExpeditionAuditLog.ChangeType.TRANSPORT_CHANGED,
+                "Zaktualizowano transport [" + transportSectionLabel(option.getSection()) + "]: " + req.getDescription().trim());
         return ExpeditionDto.TransportSectionResponse.from(option.getSection());
     }
 
@@ -870,8 +879,34 @@ public class ExpeditionService {
         if (!option.getSection().getExpedition().getId().equals(expeditionId))
             throw new AccessDeniedException("Opcja nie należy do tej wyprawy");
         ExpeditionTransportSection section = option.getSection();
+        String optionDesc = option.getDescription();
+        String sectionDesc = transportSectionLabel(section);
+        Expedition expedition = section.getExpedition();
         section.getOptions().remove(option);
         transportSectionRepository.save(section);
+        logChange(expedition, findUser(userId), ExpeditionAuditLog.ChangeType.TRANSPORT_CHANGED,
+                "Usunięto transport [" + sectionDesc + "]: " + optionDesc);
+    }
+
+    @Transactional
+    public void deleteTransportSection(Long expeditionId, Long sectionId, Long userId) {
+        Expedition expedition = findAndCheckOrganizerOrLogistyk(expeditionId, userId);
+        ExpeditionTransportSection section = transportSectionRepository.findById(sectionId)
+                .orElseThrow(() -> new IllegalArgumentException("Sekcja transportu nie istnieje"));
+        if (!section.getExpedition().getId().equals(expeditionId))
+            throw new AccessDeniedException("Sekcja nie należy do tej wyprawy");
+        String label = transportSectionLabel(section);
+        transportSectionRepository.delete(section);
+        logChange(expedition, findUser(userId), ExpeditionAuditLog.ChangeType.TRANSPORT_CHANGED,
+                "Usunięto sekcję transportu: " + label);
+    }
+
+    private String transportSectionLabel(ExpeditionTransportSection section) {
+        return switch (section.getSectionType()) {
+            case ARRIVAL -> "Dojazd";
+            case RETURN -> "Powrót";
+            case DAY_TRANSITION -> "Dzień " + section.getDayNumber();
+        };
     }
 
     private ExpeditionTransportSection getOrCreateSection(Expedition expedition, String type) {
@@ -890,14 +925,11 @@ public class ExpeditionService {
         Integer finalDayNumber = dayNumber;
         return transportSectionRepository
                 .findByExpeditionIdAndSectionTypeAndDayNumber(expedition.getId(), sectionType, dayNumber)
-                .orElseGet(() -> {
-                    ExpeditionTransportSection s = ExpeditionTransportSection.builder()
-                            .expedition(expedition)
-                            .sectionType(sectionType)
-                            .dayNumber(finalDayNumber)
-                            .build();
-                    return transportSectionRepository.save(s);
-                });
+                .orElseGet(() -> transportSectionRepository.save(ExpeditionTransportSection.builder()
+                        .expedition(expedition)
+                        .sectionType(sectionType)
+                        .dayNumber(finalDayNumber)
+                        .build()));
     }
 
     public String resolvePlaceName(String url) {
@@ -912,7 +944,7 @@ public class ExpeditionService {
         try {
             String current = url;
             for (int i = 0; i < 6; i++) {
-                java.net.HttpURLConnection conn = (java.net.HttpURLConnection) new java.net.URL(current).openConnection();
+                HttpURLConnection conn = (HttpURLConnection) new URL(current).openConnection();
                 conn.setInstanceFollowRedirects(false);
                 conn.setRequestProperty("User-Agent", "Mozilla/5.0");
                 conn.setConnectTimeout(4000);
@@ -925,7 +957,7 @@ public class ExpeditionService {
                         String[] parts = location.split("/maps/place/");
                         if (parts.length > 1) {
                             String raw = parts[1].split("/")[0].split("\\?")[0];
-                            return java.net.URLDecoder.decode(raw.replace("+", " "), java.nio.charset.StandardCharsets.UTF_8);
+                            return URLDecoder.decode(raw.replace("+", " "), StandardCharsets.UTF_8);
                         }
                     }
                     current = location.startsWith("http") ? location : "https://www.google.com" + location;
@@ -946,9 +978,7 @@ public class ExpeditionService {
                 target = resolveRedirect(url);
                 if (target == null) return null;
             }
-            java.util.regex.Matcher m = java.util.regex.Pattern
-                    .compile("/hotel/[a-z]{2}/([^./?]+)")
-                    .matcher(target);
+            Matcher m = Pattern.compile("/hotel/[a-z]{2}/([^./?]+)").matcher(target);
             if (m.find()) {
                 String[] words = m.group(1).split("-");
                 StringBuilder sb = new StringBuilder();
@@ -967,7 +997,7 @@ public class ExpeditionService {
 
     private String resolveRedirect(String url) {
         try {
-            java.net.HttpURLConnection conn = (java.net.HttpURLConnection) new java.net.URL(url).openConnection();
+            HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
             conn.setInstanceFollowRedirects(false);
             conn.setRequestProperty("User-Agent", "Mozilla/5.0");
             conn.setConnectTimeout(4000);
@@ -979,6 +1009,15 @@ public class ExpeditionService {
             }
         } catch (Exception ignored) {}
         return null;
+    }
+
+    private List<double[]> readTrackPoints(String gpxPath) {
+        try (InputStream is = Files.newInputStream(Paths.get(gpxPath))) {
+            return gpxParserService.parseTrackPoints(is);
+        } catch (Exception e) {
+            log.warn("Nie udało się odczytać punktów trasy: {}", e.getMessage());
+            return List.of();
+        }
     }
 
     private boolean isOrganizerOrLogistyk(Expedition expedition, Long userId) {
@@ -999,12 +1038,7 @@ public class ExpeditionService {
     private Expedition findAndCheckOrganizerOrLogistyk(Long expeditionId, Long userId) {
         Expedition expedition = expeditionRepository.findById(expeditionId)
                 .orElseThrow(() -> new TrailNotFoundException(expeditionId));
-        boolean isOrganizer = expedition.getOrganizer().getId().equals(userId);
-        boolean isLogistyk = expedition.getMembers().stream()
-                .anyMatch(m -> m.getUser().getId().equals(userId)
-                        && m.getStatus() == ExpeditionMember.MemberStatus.ACCEPTED
-                        && m.getMemberRole() == ExpeditionMember.MemberRole.LOGISTYK);
-        if (!isOrganizer && !isLogistyk) {
+        if (!isOrganizerOrLogistyk(expedition, userId)) {
             throw new AccessDeniedException("Tylko organizator lub logistyk może wykonać tę akcję");
         }
         return expedition;
@@ -1038,9 +1072,4 @@ public class ExpeditionService {
                 .orElseThrow(() -> new IllegalArgumentException("Nie znaleziono uzytkownika id=" + userId));
     }
 
-    public static class AccessDeniedException extends RuntimeException {
-        public AccessDeniedException(String message) {
-            super(message);
-        }
-    }
 }

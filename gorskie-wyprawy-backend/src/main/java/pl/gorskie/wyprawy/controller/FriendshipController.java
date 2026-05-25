@@ -7,7 +7,6 @@ import org.springframework.web.bind.annotation.*;
 import pl.gorskie.wyprawy.dto.FriendshipDto;
 import pl.gorskie.wyprawy.model.Friendship;
 import pl.gorskie.wyprawy.security.CurrentUserResolver;
-import pl.gorskie.wyprawy.service.ExpeditionService;
 import pl.gorskie.wyprawy.service.FriendshipService;
 
 import java.util.List;
@@ -70,15 +69,4 @@ public class FriendshipController {
         return ResponseEntity.noContent().build();
     }
 
-    @ExceptionHandler(ExpeditionService.AccessDeniedException.class)
-    public ResponseEntity<Map<String, Object>> handleAccessDenied(ExpeditionService.AccessDeniedException e) {
-        return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(Map.of("status", 403, "message", e.getMessage()));
-    }
-
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<Map<String, Object>> handleBadRequest(IllegalArgumentException e) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(Map.of("status", 400, "message", e.getMessage()));
-    }
 }

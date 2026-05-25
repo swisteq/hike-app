@@ -2,12 +2,10 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { MapContainer, TileLayer, Polyline, Marker, Popup } from 'react-leaflet';
 import { getTrail } from '../api/client';
-import { useAuth } from '../context/AuthContext';
 import 'leaflet/dist/leaflet.css';
 
 export default function TrailDetailPage() {
   const { id } = useParams();
-  const { user } = useAuth();
   const navigate = useNavigate();
   const [trail, setTrail] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -36,24 +34,7 @@ export default function TrailDetailPage() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <h1 className="text-2xl font-bold text-gray-900 mb-2">{trail.name}</h1>
-              {trail.locationTags?.length > 0 && (
-                <div className="flex flex-wrap gap-1.5">
-                  {trail.locationTags.map(tag => (
-                    <span key={tag} className="bg-mountain-50 text-mountain-700 text-xs px-2 py-0.5 rounded-full border border-mountain-200">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              )}
             </div>
-            {user && (
-              <Link
-                to={`/expeditions/new?trailId=${trail.id}`}
-                className="bg-mountain-600 hover:bg-mountain-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap"
-              >
-                + Zaplanuj wyprawę
-              </Link>
-            )}
           </div>
         </div>
 

@@ -45,7 +45,6 @@ export const joinExpedition = (id) => api.post(`/expeditions/${id}/join`);
 export const removeMember = (id, userId) => api.delete(`/expeditions/${id}/members/${userId}`);
 export const leaveExpedition = (id) => api.delete(`/expeditions/${id}/leave`);
 export const getExpeditionTrack = (id) => api.get(`/expeditions/${id}/track`);
-export const createExpedition = (data) => api.post('/expeditions', data);
 export const createExpeditionFromGpx = (formData) =>
   api.post('/expeditions/from-gpx', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
 export const updateExpedition = (id, data) => api.patch(`/expeditions/${id}`, data);
@@ -78,8 +77,11 @@ export const deleteTransportOption = (id, optionId) =>
   api.delete(`/expeditions/${id}/transport/options/${optionId}`);
 export const approveTransportOption = (id, optionId) =>
   api.post(`/expeditions/${id}/transport/options/${optionId}/approve`);
+export const deleteTransportSection = (id, sectionId) =>
+  api.delete(`/expeditions/${id}/transport/sections/${sectionId}`);
 export const addDayTrail = (id, dayNumber, formData) =>
   api.post(`/expeditions/${id}/days/${dayNumber}/trail`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+export const clearDayTrail = (id, dayNumber) => api.delete(`/expeditions/${id}/days/${dayNumber}/trail`);
 export const getDayTrack = (id, dayNumber) => api.get(`/expeditions/${id}/days/${dayNumber}/track`);
 
 // --- Znajomi ---

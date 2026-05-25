@@ -23,18 +23,6 @@ export default function TrailCard({ trail }) {
           </div>
         </div>
 
-        {trail.locationTags?.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mt-3">
-            {trail.locationTags.map((tag) => (
-              <span
-                key={tag}
-                className="bg-mountain-50 text-mountain-700 text-xs px-2 py-0.5 rounded-full border border-mountain-200"
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
-        )}
       </div>
     </Link>
   );

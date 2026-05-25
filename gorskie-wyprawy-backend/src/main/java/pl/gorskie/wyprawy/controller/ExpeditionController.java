@@ -49,14 +49,6 @@ public class ExpeditionController {
     // CRUD
     // -------------------------------------------------------------------------
 
-    @PostMapping
-    public ResponseEntity<ExpeditionDto.ExpeditionResponse> create(
-            @Valid @RequestBody ExpeditionDto.CreateRequest request) {
-        Expedition expedition = expeditionService.create(request, currentUser.getCurrentUserId());
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ExpeditionDto.ExpeditionResponse.from(expedition));
-    }
-
     @PostMapping("/multi-day")
     public ResponseEntity<ExpeditionDto.ExpeditionResponse> createMultiDay(
             @Valid @RequestBody ExpeditionDto.MultiDayCreateRequest request) {
@@ -72,6 +64,15 @@ public class ExpeditionController {
             @RequestParam("file") MultipartFile file) throws IOException {
         Long userId = currentUser.getCurrentUserId();
         ExpeditionDay day = expeditionService.addDayTrail(id, dayNumber, file, userId);
+        return ResponseEntity.ok(ExpeditionDto.DayResponse.from(day));
+    }
+
+    @DeleteMapping("/{id}/days/{dayNumber}/trail")
+    public ResponseEntity<ExpeditionDto.DayResponse> clearDayTrail(
+            @PathVariable Long id,
+            @PathVariable int dayNumber) {
+        Long userId = currentUser.getCurrentUserId();
+        ExpeditionDay day = expeditionService.clearDayTrail(id, dayNumber, userId);
         return ResponseEntity.ok(ExpeditionDto.DayResponse.from(day));
     }
 
@@ -105,6 +106,14 @@ public class ExpeditionController {
             @PathVariable Long optionId,
             @RequestBody ExpeditionDto.TransportOptionRequest request) {
         return ResponseEntity.ok(expeditionService.updateTransportOption(id, optionId, request, currentUser.getCurrentUserId()));
+    }
+
+    @DeleteMapping("/{id}/transport/sections/{sectionId}")
+    public ResponseEntity<Void> deleteTransportSection(
+            @PathVariable Long id,
+            @PathVariable Long sectionId) {
+        expeditionService.deleteTransportSection(id, sectionId, currentUser.getCurrentUserId());
+        return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/{id}/transport/options/{optionId}")
@@ -146,8 +155,8 @@ public class ExpeditionController {
 
     @PostMapping("/{id}/cancel")
     public ResponseEntity<ExpeditionDto.ExpeditionResponse> cancel(@PathVariable Long id) {
-        Expedition expedition = expeditionService.cancel(id, currentUser.getCurrentUserId());
         Long userId = currentUser.getCurrentUserId();
+        Expedition expedition = expeditionService.cancel(id, userId);
         return ResponseEntity.ok(ExpeditionDto.ExpeditionResponse.from(expedition,
                 expeditionService.resolveViewerRole(expedition, userId)));
     }
@@ -257,7 +266,7 @@ public class ExpeditionController {
     @GetMapping("/{id}")
     public ResponseEntity<ExpeditionDto.ExpeditionResponse> getExpedition(@PathVariable Long id) {
         Long userId = currentUser.getCurrentUserId();
-        Expedition expedition = expeditionService.findById(id, userId);
+        Expedition expedition = expeditionService.findById(id);
         String viewerRole = expeditionService.resolveViewerRole(expedition, userId);
         return ResponseEntity.ok(ExpeditionDto.ExpeditionResponse.from(expedition, viewerRole));
     }
@@ -346,10 +355,6 @@ public class ExpeditionController {
         return ResponseEntity.ok(ExpeditionDto.CommentResponse.from(comment));
     }
 
-    // -------------------------------------------------------------------------
-    // Error handling
-    // -------------------------------------------------------------------------
-
     @PostMapping("/{id}/transport/options/{optionId}/approve")
     public ResponseEntity<ExpeditionDto.TransportSectionResponse> approveTransportOption(
             @PathVariable Long id, @PathVariable Long optionId) {
@@ -362,15 +367,4 @@ public class ExpeditionController {
         return ResponseEntity.ok(Map.of("name", name != null ? name : ""));
     }
 
-    @ExceptionHandler(ExpeditionService.AccessDeniedException.class)
-    public ResponseEntity<Map<String, Object>> handleAccessDenied(ExpeditionService.AccessDeniedException e) {
-        return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(Map.of("status", 403, "message", e.getMessage()));
-    }
-
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<Map<String, Object>> handleBadRequest(IllegalArgumentException e) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(Map.of("status", 400, "message", e.getMessage()));
-    }
 }

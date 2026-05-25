@@ -159,7 +159,7 @@ public class GroupService {
         boolean isOwner = group.getOwner().getId().equals(requesterId);
         boolean isSelf  = requesterId.equals(targetUserId);
         if (!isOwner && !isSelf)
-            throw new ExpeditionService.AccessDeniedException("Brak uprawnień");
+            throw new AccessDeniedException("Brak uprawnień");
         if (isOwner && group.getOwner().getId().equals(targetUserId))
             throw new IllegalArgumentException("Właściciel nie może opuścić własnej grupy");
         GroupMember member = memberRepository.findByGroupIdAndUserId(groupId, targetUserId)
@@ -172,7 +172,7 @@ public class GroupService {
         Group group = findById(groupId);
         String role = resolveViewerRole(group, userId);
         if (!"OWNER".equals(role) && !"MEMBER".equals(role))
-            throw new ExpeditionService.AccessDeniedException("Tylko członkowie grupy mogą pisać na czacie");
+            throw new AccessDeniedException("Tylko członkowie grupy mogą pisać na czacie");
         User author = findUser(userId);
         GroupMessage msg = GroupMessage.builder()
                 .group(group)
@@ -187,14 +187,14 @@ public class GroupService {
         Group group = findById(groupId);
         String role = resolveViewerRole(group, userId);
         if (!"OWNER".equals(role) && !"MEMBER".equals(role))
-            throw new ExpeditionService.AccessDeniedException("Brak dostępu do czatu");
+            throw new AccessDeniedException("Brak dostępu do czatu");
         return messageRepository.findTop100ByGroupIdOrderByCreatedAtAsc(groupId);
     }
 
     private Group findAndCheckOwner(Long groupId, Long userId) {
         Group group = findById(groupId);
         if (!group.getOwner().getId().equals(userId))
-            throw new ExpeditionService.AccessDeniedException("Tylko właściciel może wykonać tę akcję");
+            throw new AccessDeniedException("Tylko właściciel może wykonać tę akcję");
         return group;
     }
 

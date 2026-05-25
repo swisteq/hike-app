@@ -15,7 +15,6 @@ public class TrailFilterRequest {
     private Integer maxDuration;
     private Integer minElevation;
     private Integer maxElevation;
-    private String locationTag;
     private String name;
 
     private String sort = "name";

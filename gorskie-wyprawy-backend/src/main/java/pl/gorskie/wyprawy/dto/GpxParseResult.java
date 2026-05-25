@@ -19,8 +19,6 @@ public class GpxParseResult {
     private int maxElevationM;
     private int minElevationM;
     private Integer durationMinutes;
-    private int trackPointsCount;
-
     // Punkt startowy
     private double startLat;
     private double startLon;

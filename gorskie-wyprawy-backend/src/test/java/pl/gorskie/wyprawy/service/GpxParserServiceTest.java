@@ -59,9 +59,6 @@ class GpxParserServiceTest {
         assertThat(result.getBboxMinLat()).isLessThan(result.getBboxMaxLat());
         assertThat(result.getBboxMinLon()).isLessThan(result.getBboxMaxLon());
 
-        // Liczba punktów
-        assertThat(result.getTrackPointsCount()).isGreaterThan(100);
-
         System.out.printf("""
             === Wyniki parsowania GPX ===%n
             Nazwa:        %s%n
@@ -70,7 +67,6 @@ class GpxParserServiceTest {
             Zejście:      -%d m%n
             Max/Min:      %d / %d m n.p.m.%n
             Czas:         %d min%n
-            Pkt trasy:    %d%n
             Start:        %.6f, %.6f%n
             """,
                 result.getName(),
@@ -80,7 +76,6 @@ class GpxParserServiceTest {
                 result.getMaxElevationM(),
                 result.getMinElevationM(),
                 result.getDurationMinutes(),
-                result.getTrackPointsCount(),
                 result.getStartLat(),
                 result.getStartLon()
         );

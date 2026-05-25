@@ -14,8 +14,6 @@ import pl.gorskie.wyprawy.model.Trail;
 import pl.gorskie.wyprawy.service.TrailService;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Map;
 
 /**
  * REST API dla tras górskich.
@@ -42,24 +40,11 @@ public class TrailController {
     // Import
     // -------------------------------------------------------------------------
 
-    /**
-     * POST /api/trails/import
-     *
-     * Importuje nową trasę z pliku GPX.
-     * Wylicza automatycznie: dystans, przewyższenie, czas, bbox.
-     * Tagi lokalizacyjne podawane ręcznie (np. "Kasprowy Wierch", "Tatry").
-     *
-     * curl -X POST http://localhost:8080/api/trails/import \
-     *   -F "file=@route.gpx" \
-     *   -F "locationTags=Kuźnice" \
-     *   -F "locationTags=Tatry Zachodnie"
-     */
     @PostMapping("/import")
     public ResponseEntity<TrailResponse> importTrail(
-            @RequestParam("file") MultipartFile file,
-            @RequestParam(value = "locationTags", required = false) List<String> locationTags
+            @RequestParam("file") MultipartFile file
     ) throws IOException {
-        Trail trail = trailService.importFromGpx(file, locationTags);
+        Trail trail = trailService.importFromGpx(file);
         return ResponseEntity.status(HttpStatus.CREATED).body(TrailResponse.from(trail));
     }
 
@@ -136,28 +121,13 @@ public class TrailController {
     // Edycja
     // -------------------------------------------------------------------------
 
-    /**
-     * PATCH /api/trails/{id}
-     *
-     * Aktualizuje edytowalne pola: opis i tagi lokalizacyjne.
-     * Metryki GPX są niezmienne po imporcie.
-     *
-     * Body (JSON):
-     * {
-     *   "description": "Piękna trasa przez Dolinę Białego",
-     *   "locationTags": ["Kuźnice", "Dolina Białego", "Tatry Zachodnie"]
-     * }
-     */
+    public record UpdateTrailRequest(String description) {}
+
     @PatchMapping("/{id}")
     public ResponseEntity<TrailResponse> updateTrail(
             @PathVariable Long id,
-            @RequestBody Map<String, Object> body
-    ) {
-        String description = (String) body.get("description");
-        @SuppressWarnings("unchecked")
-        List<String> locationTags = (List<String>) body.get("locationTags");
-
-        Trail updated = trailService.updateTrail(id, description, locationTags);
+            @RequestBody UpdateTrailRequest body) {
+        Trail updated = trailService.updateTrail(id, body.description());
         return ResponseEntity.ok(TrailResponse.from(updated));
     }
 
@@ -179,17 +149,6 @@ public class TrailController {
     // -------------------------------------------------------------------------
     // Metadane
     // -------------------------------------------------------------------------
-
-    /**
-     * GET /api/trails/meta/tags
-     *
-     * Zwraca listę wszystkich unikalnych tagów lokalizacyjnych.
-     * Używany do autocomplete w panelu filtrów.
-     */
-    @GetMapping("/meta/tags")
-    public ResponseEntity<List<String>> getLocationTags() {
-        return ResponseEntity.ok(trailService.getAllLocationTags());
-    }
 
     /**
      * GET /api/trails/meta/stats

@@ -53,30 +53,6 @@ public class ExpeditionDay {
     @Column(name = "gpx_file_path")
     private String gpxFilePath;
 
-    @Column(name = "start_lat")
-    private Double startLat;
-
-    @Column(name = "start_lon")
-    private Double startLon;
-
-    @Column(name = "bbox_min_lat")
-    private Double bboxMinLat;
-
-    @Column(name = "bbox_max_lat")
-    private Double bboxMaxLat;
-
-    @Column(name = "bbox_min_lon")
-    private Double bboxMinLon;
-
-    @Column(name = "bbox_max_lon")
-    private Double bboxMaxLon;
-
-    @Column(name = "start_location_name")
-    private String startLocationName;
-
-    @Column(name = "end_location_name")
-    private String endLocationName;
-
     @Column(name = "highest_peak_name")
     private String highestPeakName;
 

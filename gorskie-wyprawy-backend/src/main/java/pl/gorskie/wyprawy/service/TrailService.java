@@ -24,7 +24,6 @@ import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
 import java.util.UUID;
 
 @Slf4j
@@ -41,7 +40,7 @@ public class TrailService {
     // --- Import ---
 
     @Transactional
-    public Trail importFromGpx(MultipartFile file, List<String> locationTags) throws IOException {
+    public Trail importFromGpx(MultipartFile file) throws IOException {
         validateGpxFile(file);
 
         String fallbackName = stripGpxExtension(file.getOriginalFilename());
@@ -58,14 +57,8 @@ public class TrailService {
                 .maxElevationM(parsed.getMaxElevationM())
                 .minElevationM(parsed.getMinElevationM())
                 .durationMinutes(parsed.getDurationMinutes())
-                .trackPointsCount(parsed.getTrackPointsCount())
                 .startLat(parsed.getStartLat())
                 .startLon(parsed.getStartLon())
-                .bboxMinLat(parsed.getBboxMinLat())
-                .bboxMaxLat(parsed.getBboxMaxLat())
-                .bboxMinLon(parsed.getBboxMinLon())
-                .bboxMaxLon(parsed.getBboxMaxLon())
-                .locationTags(locationTags != null ? locationTags : List.of())
                 .build();
 
         Trail saved = trailRepository.save(trail);
@@ -91,7 +84,6 @@ public class TrailService {
                 filter.getMaxDuration(),
                 filter.getMinElevation(),
                 filter.getMaxElevation(),
-                emptyToNull(filter.getLocationTag()),
                 emptyToNull(filter.getName()),
                 pageable
         );
@@ -127,12 +119,7 @@ public class TrailService {
         }
     }
 
-    // --- Tagi i statystyki ---
-
-    @Transactional(readOnly = true)
-    public List<String> getAllLocationTags() {
-        return trailRepository.findAllLocationTags();
-    }
+    // --- Statystyki ---
 
     @Transactional(readOnly = true)
     public TrailStats getStats() {
@@ -142,10 +129,9 @@ public class TrailService {
     // --- Edycja ---
 
     @Transactional
-    public Trail updateTrail(Long id, String description, List<String> locationTags) {
+    public Trail updateTrail(Long id, String description) {
         Trail trail = findById(id);
         if (description != null) trail.setDescription(description);
-        if (locationTags != null) trail.setLocationTags(locationTags);
         return trailRepository.save(trail);
     }
 
@@ -187,7 +173,6 @@ public class TrailService {
     }
 
     private String stripGpxExtension(String filename) {
-        if (filename == null) return "Nieznana trasa";
         return filename.replaceAll("(?i)\\.gpx$", "");
     }
 

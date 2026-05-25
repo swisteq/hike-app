@@ -29,7 +29,6 @@ public class TrailResponse {
     private String durationFormatted;
 
     // Lokalizacja
-    private List<String> locationTags;
     private Double startLat;
     private Double startLon;
 
@@ -52,7 +51,6 @@ public class TrailResponse {
                 .minElevationM(trail.getMinElevationM())
                 .durationMinutes(trail.getDurationMinutes())
                 .durationFormatted(trail.getDurationFormatted())
-                .locationTags(trail.getLocationTags())
                 .startLat(trail.getStartLat())
                 .startLon(trail.getStartLon())
                 .gpxFileName(trail.getGpxFileName())

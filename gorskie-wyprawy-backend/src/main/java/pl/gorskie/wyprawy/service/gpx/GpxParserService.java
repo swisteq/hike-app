@@ -7,7 +7,6 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import pl.gorskie.wyprawy.dto.GpxParseResult;
 
-import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.InputStream;
 import java.time.Duration;
@@ -23,12 +22,7 @@ public class GpxParserService {
 
     public List<double[]> parseTrackPoints(InputStream inputStream) {
         try {
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            factory.setNamespaceAware(false);
-            DocumentBuilder builder = factory.newDocumentBuilder();
-            Document doc = builder.parse(inputStream);
-            doc.getDocumentElement().normalize();
-
+            Document doc = buildDocument(inputStream);
             NodeList trkpts = doc.getElementsByTagName("trkpt");
             List<double[]> points = new ArrayList<>();
             for (int i = 0; i < trkpts.getLength(); i++) {
@@ -45,12 +39,7 @@ public class GpxParserService {
 
     public GpxParseResult parse(InputStream inputStream, String fallbackName) {
         try {
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            factory.setNamespaceAware(false);
-            DocumentBuilder builder = factory.newDocumentBuilder();
-            Document doc = builder.parse(inputStream);
-            doc.getDocumentElement().normalize();
-
+            Document doc = buildDocument(inputStream);
             String name = extractName(doc, fallbackName);
 
             NodeList trkpts = doc.getElementsByTagName("trkpt");
@@ -83,7 +72,6 @@ public class GpxParserService {
                     .maxElevationM(elevations[2])
                     .minElevationM(elevations[3])
                     .durationMinutes(durationMinutes)
-                    .trackPointsCount(points.size())
                     .startLat(points.get(0)[0])
                     .startLon(points.get(0)[1])
                     .bboxMinLat(bbox[0])
@@ -212,6 +200,14 @@ public class GpxParserService {
         } catch (NumberFormatException e) {
             return defaultVal;
         }
+    }
+
+    private Document buildDocument(InputStream inputStream) throws Exception {
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        factory.setNamespaceAware(false);
+        Document doc = factory.newDocumentBuilder().parse(inputStream);
+        doc.getDocumentElement().normalize();
+        return doc;
     }
 
     private long parseTime(Element pt) {

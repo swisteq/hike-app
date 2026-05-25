@@ -14,4 +14,5 @@ public interface ExpeditionTransportSectionRepository extends JpaRepository<Expe
             Long expeditionId,
             ExpeditionTransportSection.SectionType sectionType,
             Integer dayNumber);
+
 }

@@ -5,8 +5,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.gorskie.wyprawy.model.Expedition;
+import pl.gorskie.wyprawy.model.ExpeditionDay;
 import pl.gorskie.wyprawy.model.ExpeditionLocation;
 import pl.gorskie.wyprawy.model.GeonamesFeature;
+import pl.gorskie.wyprawy.repository.ExpeditionDayRepository;
 import pl.gorskie.wyprawy.repository.ExpeditionLocationRepository;
 import pl.gorskie.wyprawy.repository.ExpeditionRepository;
 import pl.gorskie.wyprawy.repository.GeonamesFeatureRepository;
@@ -46,17 +48,19 @@ public class LocationRecognitionService {
     private final GeonamesFeatureRepository geonamesRepo;
     private final ExpeditionLocationRepository locationRepo;
     private final ExpeditionRepository expeditionRepository;
+    private final ExpeditionDayRepository dayRepository;
 
     @Transactional
     public List<ExpeditionLocation> recognizeAndSave(Expedition expedition,
                                                      List<double[]> trackPoints) {
-        return recognizeAndSave(expedition, trackPoints, null);
+        return recognizeAndSave(expedition, trackPoints, null, null);
     }
 
     @Transactional
     public List<ExpeditionLocation> recognizeAndSave(Expedition expedition,
                                                      List<double[]> trackPoints,
-                                                     Integer dayNumber) {
+                                                     Integer dayNumber,
+                                                     ExpeditionDay day) {
         // Usuń stare lokalizacje dla tego dnia (i legacy bez dayNumber) przed dodaniem nowych
         if (dayNumber != null) {
             locationRepo.deleteByExpeditionIdAndDayNumber(expedition.getId(), dayNumber);
@@ -129,6 +133,11 @@ public class LocationRecognitionService {
                     expedition.setHighestPeakElevationM(peak.getElevationM());
                     log.info("Najwyższy szczyt wyprawy {}: {} ({} m)", expedition.getId(),
                             peak.getName(), peak.getElevationM());
+                    if (day != null) {
+                        day.setHighestPeakName(peak.getName());
+                        day.setHighestPeakElevationM(peak.getElevationM());
+                        dayRepository.save(day);
+                    }
                 });
 
         expeditionRepository.save(expedition);

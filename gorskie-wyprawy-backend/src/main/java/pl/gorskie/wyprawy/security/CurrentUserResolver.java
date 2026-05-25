@@ -19,6 +19,8 @@ public class CurrentUserResolver {
     }
 
     public Long getCurrentUserId() {
-        return getCurrentUser().getId();
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        return userRepository.findIdByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Nie znaleziono zalogowanego uzytkownika"));
     }
 }
