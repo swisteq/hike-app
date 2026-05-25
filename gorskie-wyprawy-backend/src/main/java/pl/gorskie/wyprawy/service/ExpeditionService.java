@@ -90,6 +90,14 @@ public class ExpeditionService {
                 .startTime(startTime)
                 .joinMode(joinMode != null ? joinMode : Expedition.JoinMode.AUTO)
                 .visibility(visibility != null ? visibility : Expedition.Visibility.PUBLIC)
+                .build();
+
+        Expedition saved = expeditionRepository.save(expedition);
+
+        ExpeditionDay day = ExpeditionDay.builder()
+                .expedition(saved)
+                .dayNumber(1)
+                .dayDate(plannedDate)
                 .trailName(parsed.getName())
                 .distanceKm(parsed.getDistanceKm())
                 .elevationGainM(parsed.getElevationGainM())
@@ -106,9 +114,9 @@ public class ExpeditionService {
                 .endLocationName(parsed.getEndWaypointName())
                 .build();
 
-        Expedition saved = expeditionRepository.save(expedition);
-        locationRecognitionService.recognizeAndSave(saved, readTrackPoints(gpxPath));
-        return saved;
+        ExpeditionDay savedDay = dayRepository.save(day);
+        locationRecognitionService.recognizeAndSave(saved, savedDay, readTrackPoints(gpxPath));
+        return expeditionRepository.findById(saved.getId()).orElse(saved);
     }
 
     @Transactional
@@ -167,20 +175,14 @@ public class ExpeditionService {
         day.setMinElevationM(parsed.getMinElevationM());
         day.setDurationMinutes(parsed.getDurationMinutes());
         day.setGpxFilePath(gpxPath);
+        day.setBboxMinLat(parsed.getBboxMinLat());
+        day.setBboxMaxLat(parsed.getBboxMaxLat());
+        day.setBboxMinLon(parsed.getBboxMinLon());
+        day.setBboxMaxLon(parsed.getBboxMaxLon());
         ExpeditionDay saved = dayRepository.save(day);
-
-        // Rozszerzamy bounding box ekspedycji o obszar tego dnia (potrzebne do rozpoznawania lokalizacji)
-        expedition.setBboxMinLat(expedition.getBboxMinLat() == null ? parsed.getBboxMinLat()
-                : Math.min(expedition.getBboxMinLat(), parsed.getBboxMinLat()));
-        expedition.setBboxMaxLat(expedition.getBboxMaxLat() == null ? parsed.getBboxMaxLat()
-                : Math.max(expedition.getBboxMaxLat(), parsed.getBboxMaxLat()));
-        expedition.setBboxMinLon(expedition.getBboxMinLon() == null ? parsed.getBboxMinLon()
-                : Math.min(expedition.getBboxMinLon(), parsed.getBboxMinLon()));
-        expedition.setBboxMaxLon(expedition.getBboxMaxLon() == null ? parsed.getBboxMaxLon()
-                : Math.max(expedition.getBboxMaxLon(), parsed.getBboxMaxLon()));
         Expedition savedExp = expeditionRepository.save(expedition);
 
-        locationRecognitionService.recognizeAndSave(savedExp, readTrackPoints(gpxPath), dayNumber, saved);
+        locationRecognitionService.recognizeAndSave(savedExp, saved, readTrackPoints(gpxPath));
         logChange(savedExp, findUser(userId), ExpeditionAuditLog.ChangeType.DAY_TRAIL_CHANGED,
                 "Wgrano trasę dnia " + dayNumber + ": " + parsed.getName());
         return saved;
@@ -204,7 +206,7 @@ public class ExpeditionService {
         day.setHighestPeakName(null);
         day.setHighestPeakElevationM(null);
 
-        locationRepository.deleteByExpeditionIdAndDayNumber(expeditionId, dayNumber);
+        locationRepository.deleteByExpeditionDayId(day.getId());
 
         ExpeditionDay saved = dayRepository.save(day);
         String desc = "Dzień " + dayNumber + " oznaczony jako dzień odpoczynku"
@@ -307,33 +309,36 @@ public class ExpeditionService {
         Expedition expedition = findAndCheckOrganizerOrNavigator(expeditionId, userId);
         validateGpxFile(file);
 
-        String oldName = expedition.getTrailName() != null ? expedition.getTrailName() : "nieznana";
+        ExpeditionDay day = dayRepository.findByExpeditionIdAndDayNumber(expeditionId, 1)
+                .orElseThrow(() -> new IllegalArgumentException("Wyprawa nie ma dnia 1"));
+
+        String oldName = day.getTrailName() != null ? day.getTrailName() : "nieznana";
 
         String fallbackName = file.getOriginalFilename() != null
                 ? file.getOriginalFilename().replaceAll("(?i)\\.gpx$", "") : "Nieznana trasa";
         GpxParseResult parsed = gpxParserService.parse(file.getInputStream(), fallbackName);
         String gpxPath = saveGpxFile(file);
 
-        expedition.setTrailName(parsed.getName());
-        expedition.setDistanceKm(parsed.getDistanceKm());
-        expedition.setElevationGainM(parsed.getElevationGainM());
-        expedition.setElevationLossM(parsed.getElevationLossM());
-        expedition.setMaxElevationM(parsed.getMaxElevationM());
-        expedition.setMinElevationM(parsed.getMinElevationM());
-        expedition.setDurationMinutes(parsed.getDurationMinutes());
-        expedition.setGpxFilePath(gpxPath);
-        expedition.setBboxMinLat(parsed.getBboxMinLat());
-        expedition.setBboxMaxLat(parsed.getBboxMaxLat());
-        expedition.setBboxMinLon(parsed.getBboxMinLon());
-        expedition.setBboxMaxLon(parsed.getBboxMaxLon());
-        expedition.setStartLocationName(parsed.getStartWaypointName());
-        expedition.setEndLocationName(parsed.getEndWaypointName());
-        expedition.setHighestPeakName(null);
-        expedition.setHighestPeakElevationM(null);
-        expedition.getLocations().clear();
+        day.setTrailName(parsed.getName());
+        day.setDistanceKm(parsed.getDistanceKm());
+        day.setElevationGainM(parsed.getElevationGainM());
+        day.setElevationLossM(parsed.getElevationLossM());
+        day.setMaxElevationM(parsed.getMaxElevationM());
+        day.setMinElevationM(parsed.getMinElevationM());
+        day.setDurationMinutes(parsed.getDurationMinutes());
+        day.setGpxFilePath(gpxPath);
+        day.setBboxMinLat(parsed.getBboxMinLat());
+        day.setBboxMaxLat(parsed.getBboxMaxLat());
+        day.setBboxMinLon(parsed.getBboxMinLon());
+        day.setBboxMaxLon(parsed.getBboxMaxLon());
+        day.setStartLocationName(parsed.getStartWaypointName());
+        day.setEndLocationName(parsed.getEndWaypointName());
+        day.setHighestPeakName(null);
+        day.setHighestPeakElevationM(null);
 
+        ExpeditionDay savedDay = dayRepository.save(day);
         Expedition saved = expeditionRepository.save(expedition);
-        locationRecognitionService.recognizeAndSave(saved, readTrackPoints(gpxPath));
+        locationRecognitionService.recognizeAndSave(saved, savedDay, readTrackPoints(gpxPath));
 
         logChange(saved, findUser(userId), ExpeditionAuditLog.ChangeType.TRAIL_CHANGED,
                 "Zmieniono trasę z \"" + oldName + "\" na \"" + parsed.getName() + "\"");
@@ -523,7 +528,10 @@ public class ExpeditionService {
         Expedition expedition = expeditionRepository.findById(expeditionId)
                 .orElseThrow(() -> new NotFoundException("Wyprawa o id=" + expeditionId + " nie istnieje"));
 
-        String gpxPath = expedition.getGpxFilePath();
+        String gpxPath = expedition.getDays().stream()
+                .filter(d -> d.getDayNumber() == 1)
+                .map(ExpeditionDay::getGpxFilePath)
+                .findFirst().orElse(null);
 
         if (gpxPath == null) return List.of();
 

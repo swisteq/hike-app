@@ -13,11 +13,6 @@ public interface ExpeditionLocationRepository extends JpaRepository<ExpeditionLo
 
     @Modifying
     @Transactional
-    @Query("DELETE FROM ExpeditionLocation l WHERE l.expedition.id = :expeditionId AND l.dayNumber = :dayNumber")
-    void deleteByExpeditionIdAndDayNumber(@Param("expeditionId") Long expeditionId, @Param("dayNumber") Integer dayNumber);
-
-    @Modifying
-    @Transactional
-    @Query("DELETE FROM ExpeditionLocation l WHERE l.expedition.id = :expeditionId AND l.dayNumber IS NULL")
-    void deleteByExpeditionIdAndDayNumberIsNull(@Param("expeditionId") Long expeditionId);
+    @Query("DELETE FROM ExpeditionLocation l WHERE l.expeditionDay.id = :dayId")
+    void deleteByExpeditionDayId(@Param("dayId") Long dayId);
 }

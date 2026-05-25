@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "expedition_days")
@@ -59,9 +61,33 @@ public class ExpeditionDay {
     @Column(name = "highest_peak_elevation_m")
     private Integer highestPeakElevationM;
 
+    @Column(name = "start_location_name")
+    private String startLocationName;
+
+    @Column(name = "end_location_name")
+    private String endLocationName;
+
+    @Column(name = "bbox_min_lat")
+    private Double bboxMinLat;
+
+    @Column(name = "bbox_max_lat")
+    private Double bboxMaxLat;
+
+    @Column(name = "bbox_min_lon")
+    private Double bboxMinLon;
+
+    @Column(name = "bbox_max_lon")
+    private Double bboxMaxLon;
+
     @Column(name = "accommodation_name")
     private String accommodationName;
 
     @Column(name = "accommodation_url")
     private String accommodationUrl;
+
+    @OneToMany(mappedBy = "expeditionDay", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("routeIndex ASC")
+    @Builder.Default
+    @ToString.Exclude
+    private List<ExpeditionLocation> locations = new ArrayList<>();
 }

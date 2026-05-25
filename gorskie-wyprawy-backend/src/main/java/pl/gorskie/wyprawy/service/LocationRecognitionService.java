@@ -10,7 +10,6 @@ import pl.gorskie.wyprawy.model.ExpeditionLocation;
 import pl.gorskie.wyprawy.model.GeonamesFeature;
 import pl.gorskie.wyprawy.repository.ExpeditionDayRepository;
 import pl.gorskie.wyprawy.repository.ExpeditionLocationRepository;
-import pl.gorskie.wyprawy.repository.ExpeditionRepository;
 import pl.gorskie.wyprawy.repository.GeonamesFeatureRepository;
 
 import java.util.ArrayList;
@@ -47,25 +46,13 @@ public class LocationRecognitionService {
 
     private final GeonamesFeatureRepository geonamesRepo;
     private final ExpeditionLocationRepository locationRepo;
-    private final ExpeditionRepository expeditionRepository;
     private final ExpeditionDayRepository dayRepository;
 
     @Transactional
     public List<ExpeditionLocation> recognizeAndSave(Expedition expedition,
+                                                     ExpeditionDay day,
                                                      List<double[]> trackPoints) {
-        return recognizeAndSave(expedition, trackPoints, null, null);
-    }
-
-    @Transactional
-    public List<ExpeditionLocation> recognizeAndSave(Expedition expedition,
-                                                     List<double[]> trackPoints,
-                                                     Integer dayNumber,
-                                                     ExpeditionDay day) {
-        // Usuń stare lokalizacje dla tego dnia (i legacy bez dayNumber) przed dodaniem nowych
-        if (dayNumber != null) {
-            locationRepo.deleteByExpeditionIdAndDayNumber(expedition.getId(), dayNumber);
-            locationRepo.deleteByExpeditionIdAndDayNumberIsNull(expedition.getId());
-        }
+        locationRepo.deleteByExpeditionDayId(day.getId());
 
         if (trackPoints.isEmpty()) {
             log.info("Brak punktów trasy dla wyprawy {}, pomijam rozpoznawanie lokalizacji", expedition.getId());
@@ -77,13 +64,18 @@ public class LocationRecognitionService {
             return List.of();
         }
 
-        double minLat = expedition.getBboxMinLat() - BBOX_MARGIN_DEG;
-        double maxLat = expedition.getBboxMaxLat() + BBOX_MARGIN_DEG;
-        double minLon = expedition.getBboxMinLon() - BBOX_MARGIN_DEG;
-        double maxLon = expedition.getBboxMaxLon() + BBOX_MARGIN_DEG;
+        if (day.getBboxMinLat() == null) {
+            log.info("Brak bounding box dla dnia {} wyprawy {}", day.getDayNumber(), expedition.getId());
+            return List.of();
+        }
+
+        double minLat = day.getBboxMinLat() - BBOX_MARGIN_DEG;
+        double maxLat = day.getBboxMaxLat() + BBOX_MARGIN_DEG;
+        double minLon = day.getBboxMinLon() - BBOX_MARGIN_DEG;
+        double maxLon = day.getBboxMaxLon() + BBOX_MARGIN_DEG;
 
         List<GeonamesFeature> candidates = geonamesRepo.findWithinBbox(minLat, maxLat, minLon, maxLon);
-        log.info("Znaleziono {} kandydatów GeoNames w bounding boxie wyprawy {}", candidates.size(), expedition.getId());
+        log.info("Znaleziono {} kandydatów GeoNames dla dnia {} wyprawy {}", candidates.size(), day.getDayNumber(), expedition.getId());
 
         List<ExpeditionLocation> results = new ArrayList<>();
         for (GeonamesFeature feature : candidates) {
@@ -103,7 +95,7 @@ public class LocationRecognitionService {
 
             if (minDist <= MAX_DISTANCE_M) {
                 results.add(ExpeditionLocation.builder()
-                        .expedition(expedition)
+                        .expeditionDay(day)
                         .geonamesId(feature.getId())
                         .name(feature.getName())
                         .latitude(feature.getLatitude())
@@ -113,34 +105,27 @@ public class LocationRecognitionService {
                         .distanceM(Math.round(minDist * 10.0) / 10.0)
                         .routeIndex(closestIdx)
                         .typeLabelPl(toPolishLabel(feature.getFeatureClass(), feature.getFeatureCode()))
-                        .dayNumber(dayNumber)
                         .build());
             }
         }
 
         results.sort(Comparator.comparingInt(ExpeditionLocation::getRouteIndex));
         List<ExpeditionLocation> saved = locationRepo.saveAll(results);
-        log.info("Rozpoznano {} lokalizacji dla wyprawy {}", saved.size(), expedition.getId());
+        log.info("Rozpoznano {} lokalizacji dla dnia {} wyprawy {}", saved.size(), day.getDayNumber(), expedition.getId());
 
-        // Najwyższy szczyt na trasie
         candidates.stream()
                 .filter(f -> "T".equals(f.getFeatureClass()) && PEAK_CODES.contains(f.getFeatureCode()))
                 .filter(f -> f.getElevationM() != null)
                 .filter(f -> results.stream().anyMatch(r -> r.getGeonamesId().equals(f.getId())))
                 .max(Comparator.comparingInt(GeonamesFeature::getElevationM))
                 .ifPresent(peak -> {
-                    expedition.setHighestPeakName(peak.getName());
-                    expedition.setHighestPeakElevationM(peak.getElevationM());
-                    log.info("Najwyższy szczyt wyprawy {}: {} ({} m)", expedition.getId(),
-                            peak.getName(), peak.getElevationM());
-                    if (day != null) {
-                        day.setHighestPeakName(peak.getName());
-                        day.setHighestPeakElevationM(peak.getElevationM());
-                        dayRepository.save(day);
-                    }
+                    day.setHighestPeakName(peak.getName());
+                    day.setHighestPeakElevationM(peak.getElevationM());
+                    dayRepository.save(day);
+                    log.info("Najwyższy szczyt dnia {} wyprawy {}: {} ({} m)",
+                            day.getDayNumber(), expedition.getId(), peak.getName(), peak.getElevationM());
                 });
 
-        expeditionRepository.save(expedition);
         return saved;
     }
 

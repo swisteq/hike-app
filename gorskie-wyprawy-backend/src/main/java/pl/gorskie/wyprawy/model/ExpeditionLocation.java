@@ -17,9 +17,9 @@ public class ExpeditionLocation {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "expedition_id", nullable = false)
+    @JoinColumn(name = "expedition_day_id", nullable = false)
     @ToString.Exclude
-    private Expedition expedition;
+    private ExpeditionDay expeditionDay;
 
     @Column(name = "geonames_id")
     private Long geonamesId;
@@ -47,7 +47,4 @@ public class ExpeditionLocation {
 
     @Column(name = "type_label_pl")
     private String typeLabelPl;
-
-    @Column(name = "day_number")
-    private Integer dayNumber;
 }

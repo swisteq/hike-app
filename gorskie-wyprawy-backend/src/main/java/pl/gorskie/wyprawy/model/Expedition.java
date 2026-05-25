@@ -44,56 +44,8 @@ public class Expedition {
     @Builder.Default
     private Visibility visibility = Visibility.PUBLIC;
 
-    @Column(name = "trail_name")
-    private String trailName;
-
-    @Column(name = "distance_km")
-    private Double distanceKm;
-
-    @Column(name = "elevation_gain_m")
-    private Integer elevationGainM;
-
-    @Column(name = "elevation_loss_m")
-    private Integer elevationLossM;
-
-    @Column(name = "max_elevation_m")
-    private Integer maxElevationM;
-
-    @Column(name = "min_elevation_m")
-    private Integer minElevationM;
-
-    @Column(name = "duration_minutes")
-    private Integer durationMinutes;
-
-    @Column(name = "gpx_file_path")
-    private String gpxFilePath;
-
     @Column(name = "invite_token", unique = true)
     private String inviteToken;
-
-    @Column(name = "highest_peak_name")
-    private String highestPeakName;
-
-    @Column(name = "highest_peak_elevation_m")
-    private Integer highestPeakElevationM;
-
-    @Column(name = "start_location_name")
-    private String startLocationName;
-
-    @Column(name = "end_location_name")
-    private String endLocationName;
-
-    @Column(name = "bbox_min_lat")
-    private Double bboxMinLat;
-
-    @Column(name = "bbox_max_lat")
-    private Double bboxMaxLat;
-
-    @Column(name = "bbox_min_lon")
-    private Double bboxMinLon;
-
-    @Column(name = "bbox_max_lon")
-    private Double bboxMaxLon;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "organizer_id", nullable = false)
@@ -110,12 +62,6 @@ public class Expedition {
     @Builder.Default
     @ToString.Exclude
     private List<ExpeditionComment> comments = new ArrayList<>();
-
-    @OneToMany(mappedBy = "expedition", cascade = CascadeType.ALL, orphanRemoval = true)
-    @OrderBy("routeIndex ASC")
-    @Builder.Default
-    @ToString.Exclude
-    private List<ExpeditionLocation> locations = new ArrayList<>();
 
     @OneToMany(mappedBy = "expedition", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("item ASC")
@@ -167,14 +113,14 @@ public class Expedition {
     }
 
     public enum Visibility {
-        PUBLIC,             // widoczna dla wszystkich
-        FRIENDS_ONLY,       // widoczna tylko dla znajomych organizatora
-        GROUPS_ONLY,        // widoczna tylko dla członków wspólnych grup
-        FRIENDS_AND_GROUPS  // widoczna dla znajomych i wspólnych grup
+        PUBLIC,
+        FRIENDS_ONLY,
+        GROUPS_ONLY,
+        FRIENDS_AND_GROUPS
     }
 
     public enum JoinMode {
-        AUTO,              // dołączenie od razu zatwierdzone
-        APPROVAL_REQUIRED  // wymaga akceptacji organizatora
+        AUTO,
+        APPROVAL_REQUIRED
     }
 }
