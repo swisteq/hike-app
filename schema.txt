@@ -1,0 +1,301 @@
+================================================================================
+  SCHEMAT BAZY DANYCH — Górskie Wyprawy
+  Wygenerowano na podstawie encji JPA (stan aktualny kodu)
+================================================================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  UŻYTKOWNICY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+TABELA: users
+─────────────────────────────────────────────────────────────────────────────
+  id           BIGINT PK   Identyfikator użytkownika
+  name         VARCHAR     Nazwa wyświetlana (login), NOT NULL
+  email        VARCHAR     Adres e-mail, NOT NULL, UNIQUE
+  password     VARCHAR     Hasło (bcrypt), NOT NULL
+  created_at   TIMESTAMP   Data rejestracji, ustawiana automatycznie
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  WYPRAWY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+TABELA: expeditions
+─────────────────────────────────────────────────────────────────────────────
+  id                           BIGINT PK    Identyfikator wyprawy
+  name                         VARCHAR      Nazwa wyprawy, NOT NULL
+  description                  TEXT         Opis wyprawy
+  planned_date                 DATE         Data startowa, NOT NULL
+  end_date                     DATE         Data końcowa (tylko wyprawy wielodniowe)
+  start_time                   TIME         Planowana godzina startu
+  status                       VARCHAR      Status: PLANNED | ONGOING | COMPLETED |
+                                            CANCELLED | UNREALIZED, NOT NULL
+  visibility                   VARCHAR      Widoczność: PUBLIC | FRIENDS_ONLY |
+                                            GROUPS_ONLY | FRIENDS_AND_GROUPS, NOT NULL
+  join_mode                    VARCHAR      Tryb dołączania: AUTO | APPROVAL_REQUIRED,
+                                            NOT NULL
+  organizer_id                 BIGINT FK    → users.id, NOT NULL
+  invite_token                 VARCHAR      Token jednorazowego linku zaproszenia, UNIQUE
+  status_declaration_notified  BOOLEAN      Czy wysłano powiadomienie o konieczności
+                                            deklaracji statusu po zakończeniu, NOT NULL
+  created_at                   TIMESTAMP    Data utworzenia, automatyczna
+  updated_at                   TIMESTAMP    Data ostatniej modyfikacji, automatyczna
+
+
+TABELA: expedition_days
+─────────────────────────────────────────────────────────────────────────────
+  id                BIGINT PK    Identyfikator dnia
+  expedition_id     BIGINT FK    → expeditions.id, NOT NULL
+  day_number        INT          Numer porządkowy dnia w wyprawie (1, 2, 3…), NOT NULL
+  day_date          DATE         Konkretna data tego dnia, NOT NULL
+  gpx_file_path     VARCHAR      Ścieżka do pliku GPX na serwerze; NULL = brak trasy
+  accommodation_name VARCHAR     Nazwa noclegu (ręczna lub rozwiązana z URL)
+  accommodation_url  VARCHAR     Link do noclegu (Google Maps, Booking itp.)
+
+
+TABELA: expedition_day_gpx_data
+─────────────────────────────────────────────────────────────────────────────
+  Istnieje dokładnie jeden wiersz na dzień, który ma wgrany plik GPX.
+  Wszystkie wartości są wyliczane automatycznie z pliku GPX.
+
+  id                      BIGINT PK    Identyfikator
+  expedition_day_id       BIGINT FK    → expedition_days.id, NOT NULL, UNIQUE
+  distance_km             DOUBLE       Długość trasy w kilometrach
+  elevation_gain_m        INT          Suma podejść w metrach
+  elevation_loss_m        INT          Suma zejść w metrach
+  max_elevation_m         INT          Najwyższy punkt trasy (m n.p.m.)
+  min_elevation_m         INT          Najniższy punkt trasy (m n.p.m.)
+  duration_minutes        INT          Czas przejścia w minutach (NULL jeśli GPX
+                                       nie zawiera znaczników czasu)
+  highest_peak_name       VARCHAR      Nazwa najwyższego szczytu na trasie
+                                       (uzupełniana przez rozpoznawanie lokalizacji
+                                       z GeoNames)
+  highest_peak_elevation_m INT         Wysokość tego szczytu (m n.p.m.)
+  start_location_name     VARCHAR      Nazwa punktu startowego (z waypointów GPX)
+  end_location_name       VARCHAR      Nazwa punktu końcowego (z waypointów GPX)
+  bbox_min_lat            DOUBLE       Bounding box trasy — minimalna szerokość geogr.
+  bbox_max_lat            DOUBLE       Bounding box trasy — maksymalna szerokość geogr.
+  bbox_min_lon            DOUBLE       Bounding box trasy — minimalna długość geogr.
+  bbox_max_lon            DOUBLE       Bounding box trasy — maksymalna długość geogr.
+
+
+TABELA: expedition_locations
+─────────────────────────────────────────────────────────────────────────────
+  Miejsca geograficzne leżące w odległości ≤ 100 m od trasy GPX,
+  rozpoznane automatycznie na podstawie bazy GeoNames.
+
+  id                BIGINT PK    Identyfikator lokalizacji
+  expedition_day_id BIGINT FK    → expedition_days.id, NOT NULL
+  name              VARCHAR      Nazwa miejsca (np. „Rysy", „Czarny Staw"), NOT NULL
+  latitude          DOUBLE       Szerokość geograficzna, NOT NULL
+  longitude         DOUBLE       Długość geograficzna, NOT NULL
+  feature_class     CHAR(1)      Klasa GeoNames: T=teren, H=woda, S=budowla, L=park,
+                                 NOT NULL
+  feature_code      VARCHAR(10)  Kod GeoNames: PK=szczyt, PASS=przełęcz, HUT=schronisko,
+                                 LK=jezioro itp., NOT NULL
+  distance_m        DOUBLE       Odległość od najbliższego punktu trasy (w metrach)
+  route_index       INT          Indeks punktu GPX najbliższego tej lokalizacji;
+                                 używany do sortowania lokalizacji w kolejności trasy
+  type_label_pl     VARCHAR      Polska etykieta typu miejsca (np. „Szczyt", „Przełęcz")
+
+
+TABELA: expedition_members
+─────────────────────────────────────────────────────────────────────────────
+  UNIQUE: (expedition_id, user_id)
+
+  id              BIGINT PK    Identyfikator członkostwa
+  expedition_id   BIGINT FK    → expeditions.id, NOT NULL
+  user_id         BIGINT FK    → users.id, NOT NULL
+  status          VARCHAR      INVITED = zaproszony przez organizatora, czeka na akceptację
+                               PENDING = użytkownik poprosił o dołączenie, czeka na org.
+                               ACCEPTED = uczestnik potwierdzony, NOT NULL
+  member_role     VARCHAR      Rola w wyprawie: MEMBER | NAWIGATOR | LOGISTYK
+  created_at      TIMESTAMP    Data dołączenia/zaproszenia, automatyczna
+
+
+TABELA: expedition_comments
+─────────────────────────────────────────────────────────────────────────────
+  id              BIGINT PK    Identyfikator komentarza
+  expedition_id   BIGINT FK    → expeditions.id, NOT NULL
+  author_id       BIGINT FK    → users.id, NOT NULL
+  content         TEXT         Treść komentarza, NOT NULL
+  parent_id       BIGINT FK    → expedition_comments.id; NULL = komentarz główny,
+                               non-NULL = odpowiedź na inny komentarz
+  pinned          BOOLEAN      Czy przypięty przez organizatora, NOT NULL
+  created_at      TIMESTAMP    Data dodania, automatyczna
+
+
+TABELA: expedition_equipment
+─────────────────────────────────────────────────────────────────────────────
+  UNIQUE: (expedition_id, item)
+
+  id              BIGINT PK    Identyfikator pozycji sprzętu
+  expedition_id   BIGINT FK    → expeditions.id, NOT NULL
+  item            VARCHAR      Nazwa sprzętu: RACZKI | RAKI | CZEKAN |
+                               KIJKI_TREKKINGOWE | STUPTUTY | KASK |
+                               LATARKA_CZOLOWA | KREM_Z_FILTREM |
+                               OKULARY_PRZECIWSLONECZNE, NOT NULL
+  level           VARCHAR      Wymagalność: REQUIRED | RECOMMENDED, NOT NULL
+
+
+TABELA: expedition_audit_logs
+─────────────────────────────────────────────────────────────────────────────
+  id              BIGINT PK    Identyfikator wpisu
+  expedition_id   BIGINT FK    → expeditions.id, NOT NULL
+  user_id         BIGINT FK    → users.id (kto dokonał zmiany), NOT NULL
+  change_type     VARCHAR      Rodzaj zmiany: TRAIL_CHANGED | EQUIPMENT_CHANGED |
+                               DAY_TRAIL_CHANGED | DAY_TRAIL_CLEARED |
+                               ACCOMMODATION_CHANGED | TRANSPORT_CHANGED, NOT NULL
+  description     TEXT         Opis zmiany (generowany automatycznie)
+  created_at      TIMESTAMP    Data zmiany, automatyczna
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  TRANSPORT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+TABELA: expedition_transport_sections
+─────────────────────────────────────────────────────────────────────────────
+  Sekcja grupuje opcje transportu dla danego odcinka.
+  UNIQUE: (expedition_id, section_type, expedition_day_id)
+
+  id                  BIGINT PK    Identyfikator sekcji
+  expedition_id       BIGINT FK    → expeditions.id, NOT NULL
+  section_type        VARCHAR      ARRIVAL = dojazd | RETURN = powrót |
+                                   DAY_TRANSITION = przejazd między dniami, NOT NULL
+  expedition_day_id   BIGINT FK    → expedition_days.id; NULL dla ARRIVAL/RETURN,
+                                   wypełnione dla DAY_TRANSITION
+
+
+TABELA: expedition_transport_options
+─────────────────────────────────────────────────────────────────────────────
+  Pojedyncza propozycja transportu w ramach sekcji.
+
+  id                BIGINT PK    Identyfikator opcji
+  section_id        BIGINT FK    → expedition_transport_sections.id, NOT NULL
+  transport_type    VARCHAR      CAR | PUBLIC_TRANSPORT
+  description       TEXT         Opis opcji, NOT NULL
+  url               VARCHAR      Link (np. do biletu, rozkładu)
+  seats             INT          Liczba miejsc (tylko dla CAR)
+  driver_username   VARCHAR      Nazwa użytkownika kierowcy (tylko dla CAR)
+  meeting_point     VARCHAR      Opis miejsca zbiórki (tekstowy lub rozwiązany z URL)
+  meeting_point_url VARCHAR      Link do miejsca zbiórki (np. Google Maps)
+  approved          BOOLEAN      Czy zatwierdzone przez organizatora/logistyka, NOT NULL
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ZNAJOMI I GRUPY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+TABELA: friendships
+─────────────────────────────────────────────────────────────────────────────
+  UNIQUE: (requester_id, addressee_id)
+
+  id              BIGINT PK    Identyfikator relacji
+  requester_id    BIGINT FK    → users.id (kto wysłał zaproszenie), NOT NULL
+  addressee_id    BIGINT FK    → users.id (kto otrzymał zaproszenie), NOT NULL
+  status          VARCHAR      PENDING | ACCEPTED | DECLINED, NOT NULL
+  created_at      TIMESTAMP    Data wysłania zaproszenia, automatyczna
+  updated_at      TIMESTAMP    Data ostatniej zmiany statusu, automatyczna
+
+
+TABELA: user_groups
+─────────────────────────────────────────────────────────────────────────────
+  id              BIGINT PK    Identyfikator grupy
+  name            VARCHAR      Nazwa grupy, NOT NULL
+  description     TEXT         Opis grupy
+  owner_id        BIGINT FK    → users.id (właściciel), NOT NULL
+  created_at      TIMESTAMP    Data utworzenia, automatyczna
+  updated_at      TIMESTAMP    Data ostatniej modyfikacji, automatyczna
+
+
+TABELA: group_members
+─────────────────────────────────────────────────────────────────────────────
+  UNIQUE: (group_id, user_id)
+
+  id              BIGINT PK    Identyfikator członkostwa
+  group_id        BIGINT FK    → user_groups.id, NOT NULL
+  user_id         BIGINT FK    → users.id, NOT NULL
+  status          VARCHAR      INVITED = właściciel zaprosił, czeka na akceptację
+                               PENDING = użytkownik poprosił, czeka na właściciela
+                               ACCEPTED = członek potwierdzony, NOT NULL
+  created_at      TIMESTAMP    Data dołączenia/zaproszenia, automatyczna
+
+
+TABELA: group_messages
+─────────────────────────────────────────────────────────────────────────────
+  id              BIGINT PK    Identyfikator wiadomości
+  group_id        BIGINT FK    → user_groups.id, NOT NULL
+  author_id       BIGINT FK    → users.id, NOT NULL
+  content         TEXT         Treść wiadomości, NOT NULL
+  created_at      TIMESTAMP    Data wysłania, automatyczna
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  POWIADOMIENIA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+TABELA: notifications
+─────────────────────────────────────────────────────────────────────────────
+  id              BIGINT PK    Identyfikator powiadomienia
+  recipient_id    BIGINT FK    → users.id, NOT NULL
+  type            VARCHAR      Typ: FRIEND_REQUEST_RECEIVED | FRIEND_REQUEST_ACCEPTED |
+                               FRIEND_REQUEST_DECLINED | GROUP_INVITATION |
+                               GROUP_JOIN_REQUEST | GROUP_JOIN_APPROVED |
+                               GROUP_JOIN_DECLINED | EXPEDITION_INVITATION |
+                               EXPEDITION_JOIN_REQUEST | EXPEDITION_JOIN_APPROVED |
+                               EXPEDITION_JOIN_DECLINED | EXPEDITION_STATUS_CHANGED |
+                               EXPEDITION_STATUS_DECLARATION_REQUIRED, NOT NULL
+  message         TEXT         Treść powiadomienia, NOT NULL
+  related_url     VARCHAR      Link do powiązanego zasobu (np. /expeditions/42)
+  read            BOOLEAN      Czy przeczytane, NOT NULL
+  created_at      TIMESTAMP    Data utworzenia, automatyczna
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  DANE ZEWNĘTRZNE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+TABELA: geonames_features
+─────────────────────────────────────────────────────────────────────────────
+  Statyczna tabela zasilana importem z bazy GeoNames (tylko do odczytu).
+  Zawiera obiekty geograficzne używane do automatycznego rozpoznawania
+  lokalizacji na trasie GPX.
+
+  id              BIGINT PK    ID z bazy GeoNames (nie generowane, importowane)
+  name            VARCHAR      Nazwa miejsca w języku lokalnym, NOT NULL
+  ascii_name      VARCHAR      Nazwa w ASCII (bez znaków diakrytycznych)
+  latitude        DOUBLE       Szerokość geograficzna, NOT NULL
+  longitude       DOUBLE       Długość geograficzna, NOT NULL
+  feature_class   CHAR(1)      Klasa: T=teren, H=woda, S=budowla, L=park itp., NOT NULL
+  feature_code    VARCHAR(10)  Kod szczegółowy: PK=szczyt, PASS=przełęcz,
+                               HUT=schronisko, LK=jezioro itp., NOT NULL
+  country_code    CHAR(2)      Kod kraju (np. PL)
+  elevation_m     INT          Wysokość w metrach (może być NULL)
+
+
+================================================================================
+  RELACJE MIĘDZY TABELAMI (skrót)
+================================================================================
+
+  users ──< expedition_members >── expeditions
+  users ──< friendships
+  users ──< user_groups (owner)
+  users ──< group_members >── user_groups
+  users ──< group_messages >── user_groups
+  users ──< notifications
+
+  expeditions ──< expedition_days ──? expedition_day_gpx_data (1:1)
+  expeditions ──< expedition_members
+  expeditions ──< expedition_comments (drzewo — parent_id)
+  expeditions ──< expedition_equipment
+  expeditions ──< expedition_audit_logs
+  expeditions ──< expedition_transport_sections ──< expedition_transport_options
+
+  expedition_days ──< expedition_locations
+  expedition_days ──< expedition_transport_sections (DAY_TRANSITION)
+
+  geonames_features  →  (używana przy imporcie do expedition_locations, brak FK)
+
+================================================================================

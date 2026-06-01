@@ -21,9 +21,6 @@ public class ExpeditionLocation {
     @ToString.Exclude
     private ExpeditionDay expeditionDay;
 
-    @Column(name = "geonames_id")
-    private Long geonamesId;
-
     @Column(nullable = false)
     private String name;
 

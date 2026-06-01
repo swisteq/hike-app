@@ -31,53 +31,12 @@ public class ExpeditionDay {
     @Column(name = "day_date", nullable = false)
     private LocalDate dayDate;
 
-    @Column(name = "trail_name")
-    private String trailName;
-
-    @Column(name = "distance_km")
-    private Double distanceKm;
-
-    @Column(name = "elevation_gain_m")
-    private Integer elevationGainM;
-
-    @Column(name = "elevation_loss_m")
-    private Integer elevationLossM;
-
-    @Column(name = "max_elevation_m")
-    private Integer maxElevationM;
-
-    @Column(name = "min_elevation_m")
-    private Integer minElevationM;
-
-    @Column(name = "duration_minutes")
-    private Integer durationMinutes;
-
     @Column(name = "gpx_file_path")
     private String gpxFilePath;
 
-    @Column(name = "highest_peak_name")
-    private String highestPeakName;
-
-    @Column(name = "highest_peak_elevation_m")
-    private Integer highestPeakElevationM;
-
-    @Column(name = "start_location_name")
-    private String startLocationName;
-
-    @Column(name = "end_location_name")
-    private String endLocationName;
-
-    @Column(name = "bbox_min_lat")
-    private Double bboxMinLat;
-
-    @Column(name = "bbox_max_lat")
-    private Double bboxMaxLat;
-
-    @Column(name = "bbox_min_lon")
-    private Double bboxMinLon;
-
-    @Column(name = "bbox_max_lon")
-    private Double bboxMaxLon;
+    @OneToOne(mappedBy = "expeditionDay", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @ToString.Exclude
+    private ExpeditionDayGpxData gpxData;
 
     @Column(name = "accommodation_name")
     private String accommodationName;

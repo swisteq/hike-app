@@ -8,6 +8,7 @@ import pl.gorskie.wyprawy.model.Expedition;
 import pl.gorskie.wyprawy.model.ExpeditionAuditLog;
 import pl.gorskie.wyprawy.model.ExpeditionComment;
 import pl.gorskie.wyprawy.model.ExpeditionDay;
+import pl.gorskie.wyprawy.model.ExpeditionDayGpxData;
 import pl.gorskie.wyprawy.model.ExpeditionEquipment;
 import pl.gorskie.wyprawy.model.ExpeditionLocation;
 import pl.gorskie.wyprawy.model.ExpeditionMember;
@@ -53,8 +54,6 @@ public class ExpeditionDto {
         private LocalDateTime createdAt;
         private String viewerRole; // ORGANIZER | MEMBER | NAWIGATOR | LOGISTYK | PENDING | INVITED | VISITOR
 
-        // pola trasy osadzone bezpośrednio
-        private String trailName;
         private Double distanceKm;
         private Integer elevationGainM;
         private Integer elevationLossM;
@@ -81,45 +80,43 @@ public class ExpeditionDto {
             boolean fullAccess = "ORGANIZER".equals(viewerRole) || "MEMBER".equals(viewerRole)
                     || "NAWIGATOR".equals(viewerRole) || "LOGISTYK".equals(viewerRole);
 
-            String tName = e.getDays().isEmpty() ? null : e.getDays().get(0).getTrailName();
-
             double totalDist = e.getDays().stream()
-                    .filter(d -> d.getDistanceKm() != null)
-                    .mapToDouble(ExpeditionDay::getDistanceKm).sum();
+                    .filter(d -> d.getGpxData() != null && d.getGpxData().getDistanceKm() != null)
+                    .mapToDouble(d -> d.getGpxData().getDistanceKm()).sum();
             Double dist = totalDist > 0 ? Math.round(totalDist * 10.0) / 10.0 : null;
 
             int totalGain = e.getDays().stream()
-                    .filter(d -> d.getElevationGainM() != null)
-                    .mapToInt(ExpeditionDay::getElevationGainM).sum();
+                    .filter(d -> d.getGpxData() != null && d.getGpxData().getElevationGainM() != null)
+                    .mapToInt(d -> d.getGpxData().getElevationGainM()).sum();
             Integer gain = totalGain > 0 ? totalGain : null;
 
             int totalLoss = e.getDays().stream()
-                    .filter(d -> d.getElevationLossM() != null)
-                    .mapToInt(ExpeditionDay::getElevationLossM).sum();
+                    .filter(d -> d.getGpxData() != null && d.getGpxData().getElevationLossM() != null)
+                    .mapToInt(d -> d.getGpxData().getElevationLossM()).sum();
             Integer loss = totalLoss > 0 ? totalLoss : null;
 
             java.util.OptionalInt maxElOpt = e.getDays().stream()
-                    .filter(d -> d.getMaxElevationM() != null)
-                    .mapToInt(ExpeditionDay::getMaxElevationM).max();
+                    .filter(d -> d.getGpxData() != null && d.getGpxData().getMaxElevationM() != null)
+                    .mapToInt(d -> d.getGpxData().getMaxElevationM()).max();
             Integer maxEl = maxElOpt.isPresent() ? maxElOpt.getAsInt() : null;
 
             java.util.OptionalInt minElOpt = e.getDays().stream()
-                    .filter(d -> d.getMinElevationM() != null)
-                    .mapToInt(ExpeditionDay::getMinElevationM).min();
+                    .filter(d -> d.getGpxData() != null && d.getGpxData().getMinElevationM() != null)
+                    .mapToInt(d -> d.getGpxData().getMinElevationM()).min();
             Integer minEl = minElOpt.isPresent() ? minElOpt.getAsInt() : null;
 
             int totalDur = e.getDays().stream()
-                    .filter(d -> d.getDurationMinutes() != null)
-                    .mapToInt(ExpeditionDay::getDurationMinutes).sum();
+                    .filter(d -> d.getGpxData() != null && d.getGpxData().getDurationMinutes() != null)
+                    .mapToInt(d -> d.getGpxData().getDurationMinutes()).sum();
             Integer dur = totalDur > 0 ? totalDur : null;
 
             String highestPeak = e.getDays().stream()
-                    .filter(d -> d.getHighestPeakName() != null)
-                    .max(java.util.Comparator.comparingInt(d -> d.getHighestPeakElevationM() != null ? d.getHighestPeakElevationM() : 0))
-                    .map(ExpeditionDay::getHighestPeakName).orElse(null);
+                    .filter(d -> d.getGpxData() != null && d.getGpxData().getHighestPeakName() != null)
+                    .max(java.util.Comparator.comparingInt(d -> d.getGpxData().getHighestPeakElevationM() != null ? d.getGpxData().getHighestPeakElevationM() : 0))
+                    .map(d -> d.getGpxData().getHighestPeakName()).orElse(null);
             Integer highestPeakElev = e.getDays().stream()
-                    .filter(d -> d.getHighestPeakElevationM() != null)
-                    .mapToInt(ExpeditionDay::getHighestPeakElevationM).max()
+                    .filter(d -> d.getGpxData() != null && d.getGpxData().getHighestPeakElevationM() != null)
+                    .mapToInt(d -> d.getGpxData().getHighestPeakElevationM()).max()
                     .stream().boxed().findFirst().orElse(null);
 
             return ExpeditionResponse.builder()
@@ -147,7 +144,6 @@ public class ExpeditionDto {
                     .memberCount(e.getMembers().size())
                     .createdAt(e.getCreatedAt())
                     .viewerRole(viewerRole)
-                    .trailName(tName)
                     .distanceKm(dist)
                     .elevationGainM(gain)
                     .elevationLossM(loss)
@@ -190,15 +186,15 @@ public class ExpeditionDto {
             ExpeditionDay firstDay = e.getDays().get(0);
             ExpeditionDay lastDay  = e.getDays().get(e.getDays().size() - 1);
 
-            String start = firstDay.getStartLocationName();
-            String end   = lastDay.getEndLocationName();
+            String start = firstDay.getGpxData() != null ? firstDay.getGpxData().getStartLocationName() : null;
+            String end   = lastDay.getGpxData() != null ? lastDay.getGpxData().getEndLocationName() : null;
             String peak  = e.getDays().stream()
-                    .filter(d -> d.getHighestPeakName() != null)
-                    .max(java.util.Comparator.comparingInt(d -> d.getHighestPeakElevationM() != null ? d.getHighestPeakElevationM() : 0))
-                    .map(ExpeditionDay::getHighestPeakName).orElse(null);
+                    .filter(d -> d.getGpxData() != null && d.getGpxData().getHighestPeakName() != null)
+                    .max(java.util.Comparator.comparingInt(d -> d.getGpxData().getHighestPeakElevationM() != null ? d.getGpxData().getHighestPeakElevationM() : 0))
+                    .map(d -> d.getGpxData().getHighestPeakName()).orElse(null);
 
             if (start == null && end == null) {
-                return firstDay.getTrailName();
+                return null;
             }
 
             boolean loop = start != null && start.equals(end);
@@ -354,7 +350,6 @@ public class ExpeditionDto {
         private Long id;
         private int dayNumber;
         private LocalDate dayDate;
-        private String trailName;
         private Double distanceKm;
         private Integer elevationGainM;
         private Integer elevationLossM;
@@ -369,24 +364,24 @@ public class ExpeditionDto {
         private Integer highestPeakElevationM;
 
         public static DayResponse from(ExpeditionDay day) {
-            Integer dur = day.getDurationMinutes();
+            ExpeditionDayGpxData gpx = day.getGpxData();
+            Integer dur = gpx != null ? gpx.getDurationMinutes() : null;
             return DayResponse.builder()
                     .id(day.getId())
                     .dayNumber(day.getDayNumber())
                     .dayDate(day.getDayDate())
-                    .trailName(day.getTrailName())
-                    .distanceKm(day.getDistanceKm())
-                    .elevationGainM(day.getElevationGainM())
-                    .elevationLossM(day.getElevationLossM())
-                    .maxElevationM(day.getMaxElevationM())
-                    .minElevationM(day.getMinElevationM())
+                    .distanceKm(gpx != null ? gpx.getDistanceKm() : null)
+                    .elevationGainM(gpx != null ? gpx.getElevationGainM() : null)
+                    .elevationLossM(gpx != null ? gpx.getElevationLossM() : null)
+                    .maxElevationM(gpx != null ? gpx.getMaxElevationM() : null)
+                    .minElevationM(gpx != null ? gpx.getMinElevationM() : null)
                     .durationMinutes(dur)
                     .durationFormatted(dur == null ? null : (dur / 60 > 0 ? dur / 60 + "h " + dur % 60 + "min" : dur % 60 + "min"))
                     .hasTrack(day.getGpxFilePath() != null)
                     .accommodationName(day.getAccommodationName())
                     .accommodationUrl(day.getAccommodationUrl())
-                    .highestPeakName(day.getHighestPeakName())
-                    .highestPeakElevationM(day.getHighestPeakElevationM())
+                    .highestPeakName(gpx != null ? gpx.getHighestPeakName() : null)
+                    .highestPeakElevationM(gpx != null ? gpx.getHighestPeakElevationM() : null)
                     .build();
         }
     }

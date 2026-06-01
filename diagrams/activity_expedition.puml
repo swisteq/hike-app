@@ -1,0 +1,132 @@
+@startuml activity_expedition
+title Diagram aktywności — Cykl życia wyprawy
+
+skinparam activity {
+  BackgroundColor #EEF4FF
+  BorderColor #3366CC
+  DiamondBackgroundColor #FFF8E1
+  DiamondBorderColor #F57F17
+  StartColor #2E7D32
+  EndColor #B71C1C
+}
+skinparam arrow {
+  Color #333333
+}
+
+|Użytkownik|
+start
+
+:Logowanie / rejestracja;
+
+|Użytkownik|
+:Wybór trybu tworzenia wyprawy;
+
+if (Wyprawa\njednodniowa?) then (tak)
+
+  |Użytkownik|
+  :Wypełnia nazwę, datę,\nwidoczność, tryb dołączania;
+  :Wgrywa plik GPX;
+
+  |System|
+  :Parsuje GPX\n(metryki, bbox, waypoints);
+  :Zapisuje plik GPX na dysk;
+  :Tworzy rekord wyprawy\ni dnia (dayNumber=1);
+  :Zapisuje expedition_day_gpx_data;
+  :Rozpoznaje lokalizacje\nz GeoNames;
+
+else (nie — wielodniowa)
+
+  |Użytkownik|
+  :Wypełnia nazwę, daty\n(start – koniec), widoczność;
+
+  |System|
+  :Tworzy wyprawę\ni szkielet dni (bez tras);
+
+  |Organizator|
+  repeat
+    :Wybiera dzień do uzupełnienia;
+    :Wgrywa plik GPX dla dnia;
+
+    |System|
+    :Parsuje GPX dnia;
+    :Zapisuje expedition_day_gpx_data;
+    :Rozpoznaje lokalizacje dnia;
+
+    |Organizator|
+  repeat while (Są jeszcze\nniewypełnione dni?) is (tak)
+  -> nie;
+
+endif
+
+|Organizator|
+:Konfiguruje wyprawę\n(sprzęt, noclegi, transport);
+
+' ── Zarządzanie uczestnikami ──────────────────────────────────────────────────
+
+fork
+  |Organizator|
+  :Zaprasza uczestników\n(po nazwie lub linkiem);
+
+  |Użytkownik|
+  if (Tryb dołączania?) then (AUTO)
+    :Dołącza bezpośrednio\n(status: ACCEPTED);
+  else (APPROVAL_REQUIRED)
+    :Wysyła prośbę\n(status: PENDING);
+
+    |System|
+    :Powiadomienie dla\norganizatora;
+
+    |Organizator|
+    if (Zatwierdza?) then (tak)
+      :Zmienia status\nna ACCEPTED;
+
+      |System|
+      :Powiadomienie dla\nuczestnika;
+    else (nie)
+      :Odrzuca prośbę\n(usuwa rekord);
+    endif
+  endif
+
+fork again
+  |Organizator|
+  :Przydziela role\n(NAWIGATOR / LOGISTYK);
+end fork
+
+' ── Automatyczne przejścia statusu ───────────────────────────────────────────
+
+|System (Scheduler)|
+:Sprawdza daty wypraw\n(co godzinę);
+
+if (Data startowa\nminęła?) then (tak)
+  :Zmienia status\nPLANNED → ONGOING;
+  :Powiadamia uczestników;
+endif
+
+' ── Zakończenie ───────────────────────────────────────────────────────────────
+
+|System (Scheduler)|
+if (Data końcowa\n+ 24h minęła?) then (tak)
+  :Wysyła powiadomienie\no deklaracji statusu;
+
+  |Organizator|
+  if (Wyprawa\nzrealizowana?) then (tak)
+    :Oznacza jako\nZAKOŃCZONA;
+  else (nie)
+    :Oznacza jako\nNIEZREALIZOWANA;
+  endif
+endif
+
+if (Organizator\nchce odwołać?) then (tak)
+  |Organizator|
+  :Odwołuje wyprawę\n(status: CANCELLED);
+
+  |System|
+  :Powiadamia\nwszystkich uczestników;
+endif
+
+|System|
+:Finalna wyprawa\n(status końcowy zapisany);
+
+stop
+
+@enduml

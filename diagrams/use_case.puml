@@ -1,0 +1,174 @@
+@startuml use_case
+title Diagram przypadków użycia — Górskie Wyprawy
+
+left to right direction
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+skinparam usecase {
+  BackgroundColor #EEF4FF
+  BorderColor #3366CC
+}
+
+' ── Aktorzy ──────────────────────────────────────────────────────────────────
+
+actor "Gość"           as Guest
+actor "Użytkownik"     as User
+actor "Organizator"    as Org
+actor "Nawigator"      as Nav
+actor "Logistyk"       as Log
+actor "System"         as Sys  #AAAAAA
+
+' Hierarchia dziedziczenia
+Guest  <|-- User
+User   <|-- Org
+User   <|-- Nav
+User   <|-- Log
+
+' ── Konto ────────────────────────────────────────────────────────────────────
+
+rectangle "Konto" {
+  usecase "Rejestracja"                as UC_REG
+  usecase "Logowanie"                  as UC_LOGIN
+  usecase "Wylogowanie"                as UC_LOGOUT
+}
+
+Guest --> UC_REG
+Guest --> UC_LOGIN
+User  --> UC_LOGOUT
+
+' ── Przeglądanie ─────────────────────────────────────────────────────────────
+
+rectangle "Przeglądanie" {
+  usecase "Przeglądanie wypraw\npublicznych"   as UC_BROWSE
+  usecase "Filtrowanie i sortowanie"            as UC_FILTER
+  usecase "Podgląd szczegółów wyprawy"          as UC_DETAIL
+}
+
+UC_BROWSE ..> UC_FILTER : <<extend>>
+
+Guest --> UC_BROWSE
+Guest --> UC_DETAIL
+
+' ── Zarządzanie wyprawą ───────────────────────────────────────────────────────
+
+rectangle "Zarządzanie wyprawą" {
+  usecase "Tworzenie wyprawy\njednodniowej (GPX)"  as UC_CREATE_GPX
+  usecase "Tworzenie wyprawy\nwielodniowej"         as UC_CREATE_MULTI
+  usecase "Edycja danych wyprawy"                   as UC_EDIT
+  usecase "Odwołanie wyprawy"                       as UC_CANCEL
+  usecase "Oznaczenie jako\nzakończona/niezrealizowana" as UC_STATUS
+  usecase "Zarządzanie sprzętem"                    as UC_EQUIP
+  usecase "Zarządzanie zakwaterowaniem"             as UC_ACCOMMODATION
+}
+
+Org --> UC_CREATE_GPX
+Org --> UC_CREATE_MULTI
+Org --> UC_EDIT
+Org --> UC_CANCEL
+Org --> UC_STATUS
+Org --> UC_EQUIP
+Org --> UC_ACCOMMODATION
+Log --> UC_ACCOMMODATION
+Log --> UC_EQUIP
+
+' ── Trasy GPX ────────────────────────────────────────────────────────────────
+
+rectangle "Trasy GPX" {
+  usecase "Wgranie/zmiana trasy dnia"   as UC_GPX_UPLOAD
+  usecase "Usunięcie trasy dnia"        as UC_GPX_CLEAR
+  usecase "Podgląd mapy trasy"          as UC_MAP
+  usecase "Parsowanie GPX\n+ metryki"   as UC_PARSE   #DDDDDD
+  usecase "Rozpoznawanie\nlokalizacji"  as UC_LOC     #DDDDDD
+}
+
+UC_GPX_UPLOAD ..> UC_PARSE : <<include>>
+UC_PARSE       ..> UC_LOC  : <<include>>
+
+Org --> UC_GPX_UPLOAD
+Nav --> UC_GPX_UPLOAD
+Org --> UC_GPX_CLEAR
+Nav --> UC_GPX_CLEAR
+User --> UC_MAP
+Sys  --> UC_PARSE
+Sys  --> UC_LOC
+
+' ── Uczestnicy ───────────────────────────────────────────────────────────────
+
+rectangle "Uczestnicy" {
+  usecase "Dołączenie do wyprawy"        as UC_JOIN
+  usecase "Zaproszenie uczestnika"       as UC_INVITE
+  usecase "Generowanie linku\nzaproszenia" as UC_INVITE_LINK
+  usecase "Dołączenie przez link"        as UC_JOIN_LINK
+  usecase "Zatwierdzenie prośby\no dołączenie" as UC_APPROVE
+  usecase "Odrzucenie zaproszenia"       as UC_DECLINE_INV
+  usecase "Zmiana roli uczestnika"       as UC_ROLE
+  usecase "Usunięcie uczestnika"         as UC_KICK
+}
+
+User --> UC_JOIN
+User --> UC_JOIN_LINK
+User --> UC_DECLINE_INV
+Org  --> UC_INVITE
+Org  --> UC_INVITE_LINK
+Org  --> UC_APPROVE
+Org  --> UC_ROLE
+Org  --> UC_KICK
+
+' ── Komentarze i transport ───────────────────────────────────────────────────
+
+rectangle "Komentarze i transport" {
+  usecase "Dodanie komentarza"          as UC_COMMENT
+  usecase "Odpowiedź na komentarz"      as UC_REPLY
+  usecase "Przypięcie komentarza"       as UC_PIN
+  usecase "Dodanie opcji transportu"    as UC_TRANSPORT_ADD
+  usecase "Zatwierdzenie transportu"    as UC_TRANSPORT_APPROVE
+}
+
+UC_REPLY ..> UC_COMMENT : <<extend>>
+
+User --> UC_COMMENT
+User --> UC_REPLY
+User --> UC_TRANSPORT_ADD
+Org  --> UC_PIN
+Org  --> UC_TRANSPORT_APPROVE
+Log  --> UC_TRANSPORT_APPROVE
+
+' ── Znajomi ──────────────────────────────────────────────────────────────────
+
+rectangle "Znajomi" {
+  usecase "Wysłanie zaproszenia\ndo znajomych"    as UC_FRIEND_REQ
+  usecase "Akceptacja/odrzucenie\nzaproszenia"    as UC_FRIEND_RESP
+  usecase "Usunięcie ze znajomych"                as UC_FRIEND_DEL
+}
+
+User --> UC_FRIEND_REQ
+User --> UC_FRIEND_RESP
+User --> UC_FRIEND_DEL
+
+' ── Grupy ────────────────────────────────────────────────────────────────────
+
+rectangle "Grupy" {
+  usecase "Tworzenie grupy"             as UC_GROUP_CREATE
+  usecase "Zaproszenie do grupy"        as UC_GROUP_INVITE
+  usecase "Akceptacja do grupy"         as UC_GROUP_JOIN
+  usecase "Chat grupowy"                as UC_GROUP_CHAT
+}
+
+User --> UC_GROUP_CREATE
+User --> UC_GROUP_INVITE
+User --> UC_GROUP_JOIN
+User --> UC_GROUP_CHAT
+
+' ── Powiadomienia ────────────────────────────────────────────────────────────
+
+rectangle "Powiadomienia" {
+  usecase "Odczyt powiadomień"           as UC_NOTIF_READ
+  usecase "Generowanie powiadomień"      as UC_NOTIF_GEN  #DDDDDD
+  usecase "Automatyczna aktualizacja\nstatusów wypraw" as UC_AUTO_STATUS #DDDDDD
+}
+
+User --> UC_NOTIF_READ
+Sys  --> UC_NOTIF_GEN
+Sys  --> UC_AUTO_STATUS
+
+@enduml

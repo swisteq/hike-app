@@ -1,0 +1,119 @@
+@startuml activity_gpx
+title Diagram aktywności — Przetwarzanie pliku GPX
+
+skinparam activity {
+  BackgroundColor #EEF4FF
+  BorderColor #3366CC
+  DiamondBackgroundColor #FFF8E1
+  DiamondBorderColor #F57F17
+  StartColor #2E7D32
+  EndColor #B71C1C
+}
+
+|Użytkownik|
+start
+
+:Wgrywa plik .gpx;
+
+|System — walidacja|
+if (Plik istnieje\ni ma rozszerzenie .gpx?) then (nie)
+  :Zwraca błąd 400\n"Plik GPX jest wymagany";
+  stop
+else (tak)
+endif
+
+|System — parsowanie GPX|
+:Parsuje XML\n(DocumentBuilderFactory);
+
+if (Brak elementów\n<trkpt>?) then (tak)
+  :Zwraca błąd\n"Plik nie zawiera punktów trasy";
+  stop
+else (nie)
+endif
+
+:Odczytuje punkty trasy\n(lat, lon, ele, time);
+
+fork
+  :Oblicza dystans\n(suma haversine kolejnych punktów);
+fork again
+  :Oblicza przewyższenia\n(gain/loss z progiem 2m,\nmax/min ele);
+fork again
+  :Oblicza czas\n(różnica timestamp\npierw. i ostatn. punktu);
+fork again
+  :Oblicza bounding box\n(min/max lat i lon);
+fork again
+  :Wyodrębnia nazwę\n(z <name> lub fallback\nz nazwy pliku);
+fork again
+  :Wyodrębnia waypoints\n(<wpt> lub <rtept>)\njako start/end;
+end fork
+
+:Zwraca GpxParseResult\n(wszystkie metryki);
+
+|System — zapis|
+:Zapisuje plik GPX\nna dysk (UUID + oryginalna nazwa);
+
+:Zapisuje/aktualizuje\nExpeditionDay\n(gpx_file_path);
+
+:Zapisuje expedition_day_gpx_data\n(metryki, bbox, start/end location);
+
+' ── Rozpoznawanie lokalizacji ─────────────────────────────────────────────────
+
+|System — lokalizacje|
+if (Tabela geonames_features\njest pusta?) then (tak)
+  :Pomija rozpoznawanie\n(loguje informację);
+  stop
+else (nie)
+endif
+
+if (Bounding box\ndostępny?) then (nie)
+  :Pomija rozpoznawanie;
+  stop
+else (tak)
+endif
+
+:Odpytuje geonames_features\nw obszarze bbox ± 0.01°;
+
+:Usuwa poprzednie\nlokalizacje dnia\n(expedition_locations);
+
+|System — dopasowanie|
+repeat
+  :Pobiera kandydata\n(GeonamesFeature);
+
+  :Oblicza odległość\ndo każdego punktu trasy\n(haversine);
+
+  :Zapamiętuje minimalne\nodstępstwo i indeks\npunktu (route_index);
+
+  if (Odległość\n≤ 100 m?) then (tak)
+    :Dodaje do listy\nwyników\n(z typeLabelPl);
+  else (nie)
+    :Pomija kandydata;
+  endif
+
+repeat while (Są kolejni\nkandydaci?) is (tak)
+-> nie;
+
+:Sortuje wyniki\nwg route_index\n(kolejność na trasie);
+
+:Zapisuje do\nexpedition_locations;
+
+' ── Wykrywanie najwyższego szczytu ───────────────────────────────────────────
+
+|System — szczyt|
+:Filtruje dopasowane\nobiekty klasy T\n(PK, PKLT, MT)\nz elevation_m != null;
+
+if (Znaleziono\nszczyt?) then (tak)
+  :Wybiera najwyższy\n(max elevation_m);
+  :Aktualizuje\nhighest_peak_name\ni highest_peak_elevation_m\nw expedition_day_gpx_data;
+else (nie)
+  :Pole highest_peak\npozostaje NULL;
+endif
+
+|System|
+:Zwraca zapisany\nExpeditionDay\nz pełnymi danymi;
+
+|Użytkownik|
+:Widzi metryki trasy\ni rozpoznane lokalizacje;
+
+stop
+
+@enduml

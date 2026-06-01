@@ -64,19 +64,20 @@ public class LocationRecognitionService {
             return List.of();
         }
 
-        if (day.getBboxMinLat() == null) {
+        if (day.getGpxData() == null || day.getGpxData().getBboxMinLat() == null) {
             log.info("Brak bounding box dla dnia {} wyprawy {}", day.getDayNumber(), expedition.getId());
             return List.of();
         }
 
-        double minLat = day.getBboxMinLat() - BBOX_MARGIN_DEG;
-        double maxLat = day.getBboxMaxLat() + BBOX_MARGIN_DEG;
-        double minLon = day.getBboxMinLon() - BBOX_MARGIN_DEG;
-        double maxLon = day.getBboxMaxLon() + BBOX_MARGIN_DEG;
+        double minLat = day.getGpxData().getBboxMinLat() - BBOX_MARGIN_DEG;
+        double maxLat = day.getGpxData().getBboxMaxLat() + BBOX_MARGIN_DEG;
+        double minLon = day.getGpxData().getBboxMinLon() - BBOX_MARGIN_DEG;
+        double maxLon = day.getGpxData().getBboxMaxLon() + BBOX_MARGIN_DEG;
 
         List<GeonamesFeature> candidates = geonamesRepo.findWithinBbox(minLat, maxLat, minLon, maxLon);
         log.info("Znaleziono {} kandydatów GeoNames dla dnia {} wyprawy {}", candidates.size(), day.getDayNumber(), expedition.getId());
 
+        Set<Long> matchedIds = new java.util.HashSet<>();
         List<ExpeditionLocation> results = new ArrayList<>();
         for (GeonamesFeature feature : candidates) {
             double minDist = Double.MAX_VALUE;
@@ -94,9 +95,9 @@ public class LocationRecognitionService {
             }
 
             if (minDist <= MAX_DISTANCE_M) {
+                matchedIds.add(feature.getId());
                 results.add(ExpeditionLocation.builder()
                         .expeditionDay(day)
-                        .geonamesId(feature.getId())
                         .name(feature.getName())
                         .latitude(feature.getLatitude())
                         .longitude(feature.getLongitude())
@@ -116,11 +117,11 @@ public class LocationRecognitionService {
         candidates.stream()
                 .filter(f -> "T".equals(f.getFeatureClass()) && PEAK_CODES.contains(f.getFeatureCode()))
                 .filter(f -> f.getElevationM() != null)
-                .filter(f -> results.stream().anyMatch(r -> r.getGeonamesId().equals(f.getId())))
+                .filter(f -> matchedIds.contains(f.getId()))
                 .max(Comparator.comparingInt(GeonamesFeature::getElevationM))
                 .ifPresent(peak -> {
-                    day.setHighestPeakName(peak.getName());
-                    day.setHighestPeakElevationM(peak.getElevationM());
+                    day.getGpxData().setHighestPeakName(peak.getName());
+                    day.getGpxData().setHighestPeakElevationM(peak.getElevationM());
                     dayRepository.save(day);
                     log.info("Najwyższy szczyt dnia {} wyprawy {}: {} ({} m)",
                             day.getDayNumber(), expedition.getId(), peak.getName(), peak.getElevationM());

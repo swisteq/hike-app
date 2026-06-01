@@ -1,0 +1,67 @@
+<mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+  <root>
+    <mxCell id="0" />
+    <mxCell id="1" parent="0" />
+
+    <!-- Title -->
+    <mxCell id="2" value="Diagram przepływu danych — Poziom kontekstowy&#xa;Górskie Wyprawy" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=16;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="270" y="20" width="630" height="50" as="geometry" />
+    </mxCell>
+
+    <!-- SYSTEM -->
+    <mxCell id="3" value="&lt;b&gt;Górskie Wyprawy&lt;/b&gt;&#xa;(system)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;" vertex="1" parent="1">
+      <mxGeometry x="419" y="293" width="330" height="220" as="geometry" />
+    </mxCell>
+
+    <!-- Użytkownik -->
+    <mxCell id="4" value="Użytkownik&#xa;(przeglądarka)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="40" y="373" width="140" height="60" as="geometry" />
+    </mxCell>
+
+    <!-- Administrator -->
+    <mxCell id="5" value="Administrator&#xa;(import danych)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="40" y="530" width="140" height="60" as="geometry" />
+    </mxCell>
+
+    <!-- GeoNames -->
+    <mxCell id="6" value="GeoNames&#xa;(baza geograficzna)" style="shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="970" y="200" width="150" height="90" as="geometry" />
+    </mxCell>
+
+    <!-- Google Maps / Booking.com -->
+    <mxCell id="7" value="Google Maps /&#xa;Booking.com" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="970" y="450" width="150" height="60" as="geometry" />
+    </mxCell>
+
+    <!-- USER → SYSTEM -->
+    <mxCell id="8" value="dane logowania / rejestracji&#xa;dane wyprawy (nazwa, daty, uczestnicy)&#xa;plik GPX&#xa;akcje zarządzania (zaproszenia, transport, sprzęt)" style="edgeStyle=orthogonalEdgeStyle;html=1;exitX=1;exitY=0.3;exitDx=0;exitDy=0;entryX=0;entryY=0.3;entryDx=0;entryDy=0;align=left;fontSize=11;" edge="1" source="4" target="3" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- SYSTEM → USER -->
+    <mxCell id="9" value="token JWT&#xa;dane wypraw (metryki, lokalizacje, uczestnicy)&#xa;powiadomienia&#xa;lista znajomych / grup" style="edgeStyle=orthogonalEdgeStyle;html=1;exitX=0;exitY=0.7;exitDx=0;exitDy=0;entryX=1;entryY=0.7;entryDx=0;entryDy=0;align=left;fontSize=11;" edge="1" source="3" target="4" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- ADMIN → SYSTEM -->
+    <mxCell id="10" value="import danych geograficznych (CSV)" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=11;" edge="1" source="5" target="3" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- GEONAMES → SYSTEM -->
+    <mxCell id="11" value="dane geograficzne&#xa;(szczyty, przełęcze, schroniska...)" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=11;" edge="1" source="6" target="3" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- SYSTEM → EXTERNAL_URL -->
+    <mxCell id="12" value="żądanie HTTP (rozwiązanie skróconego URL)" style="edgeStyle=orthogonalEdgeStyle;html=1;exitX=1;exitY=0.75;exitDx=0;exitDy=0;entryX=0;entryY=0.3;entryDx=0;entryDy=0;fontSize=11;" edge="1" source="3" target="7" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- EXTERNAL_URL → SYSTEM -->
+    <mxCell id="13" value="przekierowanie / nazwa miejsca" style="edgeStyle=orthogonalEdgeStyle;html=1;exitX=0;exitY=0.7;exitDx=0;exitDy=0;entryX=1;entryY=0.6;entryDx=0;entryDy=0;fontSize=11;" edge="1" source="7" target="3" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+  </root>
+</mxGraphModel>
