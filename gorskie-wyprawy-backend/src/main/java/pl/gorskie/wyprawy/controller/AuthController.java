@@ -19,7 +19,8 @@ public class AuthController {
      * Body: { "name": "Jan", "email": "jan@example.com", "password": "haslo123" }
      */
     @PostMapping("/register")
-    public ResponseEntity<AuthDto.AuthResponse> register(@Valid @RequestBody AuthDto.RegisterRequest request) {
+    public ResponseEntity<AuthDto.AuthResponse> register
+        (@Valid @RequestBody AuthDto.RegisterRequest request) {
         return ResponseEntity.ok(authService.register(request));
     }
 
@@ -28,7 +29,9 @@ public class AuthController {
      * Body: { "email": "jan@example.com", "password": "haslo123" }
      */
     @PostMapping("/login")
-    public ResponseEntity<AuthDto.AuthResponse> login(@Valid @RequestBody AuthDto.LoginRequest request) {
+    public ResponseEntity<AuthDto.AuthResponse> login
+        (@Valid @RequestBody AuthDto.LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
     }
 }
+

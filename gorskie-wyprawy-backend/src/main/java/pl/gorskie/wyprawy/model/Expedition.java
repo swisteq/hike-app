@@ -52,7 +52,8 @@ public class Expedition {
     @ToString.Exclude
     private User organizer;
 
-    @OneToMany(mappedBy = "expedition", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "expedition", cascade = CascadeType.ALL,
+            orphanRemoval = true)
     @Builder.Default
     @ToString.Exclude
     private List<ExpeditionMember> members = new ArrayList<>();

@@ -263,7 +263,14 @@ TABELA: geonames_features
   Zawiera obiekty geograficzne używane do automatycznego rozpoznawania
   lokalizacji na trasie GPX.
 
-  id              BIGINT PK    ID z bazy GeoNames (nie generowane, importowane)
+  Uzupełniona dodatkowo o schroniska górskie (feature_code=HUT) pozyskane
+  z OpenStreetMap przez Overpass API (import_osm_huts.py) — GeoNames nie miał
+  wystarczającego pokrycia schronisk w polskich górach. Rekordy z OSM mają
+  ujemne ID (przesunięcie -1 000 000 000 względem oryginalnego ID OSM), żeby
+  nie kolidować z ID z GeoNames.
+
+  id              BIGINT PK    ID z bazy GeoNames (dodatnie) lub ujemne ID
+                               wygenerowane przy imporcie z OSM dla schronisk
   name            VARCHAR      Nazwa miejsca w języku lokalnym, NOT NULL
   ascii_name      VARCHAR      Nazwa w ASCII (bez znaków diakrytycznych)
   latitude        DOUBLE       Szerokość geograficzna, NOT NULL

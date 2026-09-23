@@ -148,7 +148,8 @@ public class GpxParserService {
         double dLat = lat2 - lat1;
         double dLon = Math.toRadians(b[1] - a[1]);
         double h = Math.sin(dLat / 2) * Math.sin(dLat / 2)
-                + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+                + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2)
+                * Math.sin(dLon / 2);
         return 2 * R * Math.asin(Math.sqrt(h));
     }
 

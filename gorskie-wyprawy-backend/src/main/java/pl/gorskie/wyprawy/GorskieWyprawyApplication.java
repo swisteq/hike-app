@@ -12,3 +12,4 @@ public class GorskieWyprawyApplication {
         SpringApplication.run(GorskieWyprawyApplication.class, args);
     }
 }
+

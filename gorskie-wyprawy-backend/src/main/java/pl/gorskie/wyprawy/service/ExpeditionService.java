@@ -980,10 +980,12 @@ public class ExpeditionService {
                         String[] parts = location.split("/maps/place/");
                         if (parts.length > 1) {
                             String raw = parts[1].split("/")[0].split("\\?")[0];
-                            return URLDecoder.decode(raw.replace("+", " "), StandardCharsets.UTF_8);
+                            return URLDecoder.decode(raw.replace("+", " ")
+                                    , StandardCharsets.UTF_8);
                         }
                     }
-                    current = location.startsWith("http") ? location : "https://www.google.com" + location;
+                    current = location.startsWith("http") ? location : "https://www.google.com"
+                            + location;
                 } else {
                     break;
                 }

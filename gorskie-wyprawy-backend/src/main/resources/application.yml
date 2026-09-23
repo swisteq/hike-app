@@ -31,3 +31,5 @@ app:
   jwt:
     secret: gorskie-wyprawy-super-secret-key-minimum-256-bits-long-change-in-production
     expiration-ms: 86400000
+
+

@@ -74,7 +74,8 @@ public class LocationRecognitionService {
         double minLon = day.getGpxData().getBboxMinLon() - BBOX_MARGIN_DEG;
         double maxLon = day.getGpxData().getBboxMaxLon() + BBOX_MARGIN_DEG;
 
-        List<GeonamesFeature> candidates = geonamesRepo.findWithinBbox(minLat, maxLat, minLon, maxLon);
+        List<GeonamesFeature> candidates = geonamesRepo.findWithinBbox
+                (minLat, maxLat, minLon, maxLon);
         log.info("Znaleziono {} kandydatów GeoNames dla dnia {} wyprawy {}", candidates.size(), day.getDayNumber(), expedition.getId());
 
         Set<Long> matchedIds = new java.util.HashSet<>();
@@ -105,7 +106,8 @@ public class LocationRecognitionService {
                         .featureCode(feature.getFeatureCode())
                         .distanceM(Math.round(minDist * 10.0) / 10.0)
                         .routeIndex(closestIdx)
-                        .typeLabelPl(toPolishLabel(feature.getFeatureClass(), feature.getFeatureCode()))
+                        .typeLabelPl(toPolishLabel(feature.getFeatureClass()
+                                , feature.getFeatureCode()))
                         .build());
             }
         }
@@ -115,7 +117,8 @@ public class LocationRecognitionService {
         log.info("Rozpoznano {} lokalizacji dla dnia {} wyprawy {}", saved.size(), day.getDayNumber(), expedition.getId());
 
         candidates.stream()
-                .filter(f -> "T".equals(f.getFeatureClass()) && PEAK_CODES.contains(f.getFeatureCode()))
+                .filter(f -> "T".equals(f.getFeatureClass()) &&
+                        PEAK_CODES.contains(f.getFeatureCode()))
                 .filter(f -> f.getElevationM() != null)
                 .filter(f -> matchedIds.contains(f.getId()))
                 .max(Comparator.comparingInt(GeonamesFeature::getElevationM))

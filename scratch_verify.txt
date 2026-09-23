@@ -1,0 +1,580 @@
+
+UNIWERSYTET EKONOMICZNY W KATOWICACHKIERUNEK INFORMATYKADAMIAN SKARBOŃ143256PROTOTYP APLIKACJI DO PLANOWANIA AMATORSKICH WYPRAW GÓRSKICHPROTOTYPE APPLICATION FOR PLANNING AMATEUR MOUNTAIN TRIPSPraca licencjacka napisana pod kierunkiem dr Bogna ZacnyKATOWICE 2026UNIWERSYTET EKONOMICZNY W KATOWICACHKIERUNEK INFORMATYKADAMIAN SKARBOŃ143256PROTOTYP APLIKACJI DO PLANOWANIA AMATORSKICH WYPRAW GÓRSKICHPROTOTYPE APPLICATION FOR PLANNING AMATEUR MOUNTAIN TRIPSPraca licencjacka napisana pod kierunkiem dr Bogna ZacnyKATOWICE 2026
+UNIWERSYTET EKONOMICZNY W KATOWICACH
+
+KIERUNEK INFORMATYKA
+
+
+
+
+
+DAMIAN SKARBOŃ
+143256
+
+
+
+
+
+
+PROTOTYP APLIKACJI DO PLANOWANIA AMATORSKICH WYPRAW GÓRSKICH
+PROTOTYPE APPLICATION FOR PLANNING AMATEUR MOUNTAIN TRIPS
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Praca licencjacka napisana pod kierunkiem dr Bogna Zacny
+
+
+
+
+
+
+KATOWICE 2026
+UNIWERSYTET EKONOMICZNY W KATOWICACH
+
+KIERUNEK INFORMATYKA
+
+
+
+
+
+DAMIAN SKARBOŃ
+143256
+
+
+
+
+
+
+PROTOTYP APLIKACJI DO PLANOWANIA AMATORSKICH WYPRAW GÓRSKICH
+PROTOTYPE APPLICATION FOR PLANNING AMATEUR MOUNTAIN TRIPS
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Praca licencjacka napisana pod kierunkiem dr Bogna Zacny
+
+
+
+
+
+
+KATOWICE 2026
+OŚWIADCZENIE PROMOTORA
+
+Oświadczam, że niniejsza praca została przygotowana pod moim kierunkiem i stwierdzam, że spełnia wymogi stawiane pracom dyplomowym.
+
+Pracę akceptuję
+
+
+…………………………………………………………………………
+        (data)          (podpis promotora)
+
+Damian SkarbońKatowice, dnia ...............................
+Imię i nazwisko
+Informatyka
+Kierunek 
+143256
+Nr albumu 
+
+
+OŚWIADCZENIE
+
+Mając świadomość odpowiedzialności prawnej oświadczam, że złożona praca licencjacka pt.: „Prototyp aplikacji do planowania amatorskich wypraw górskich” została napisana przeze mnie samodzielnie.
+Równocześnie oświadczam, że praca ta nie narusza praw autorskich w rozumieniu ustawy z dnia 4 lutego 1994 roku o prawie autorskim i prawach pokrewnych oraz dóbr osobistych chronionych prawem.
+Ponadto praca nie zawiera informacji i danych uzyskanych w sposób niedozwolony i nie była wcześniej przedmiotem innych procedur związanych z uzyskaniem dyplomów lub tytułów zawodowych uczelni wyższej.
+Wyrażam zgodę na nieodpłatne udostępnienie mojej pracy w celu oceny jej oryginalności przez Jednolity System Antyplagiatowy prowadzony przez ministra właściwego ds. szkolnictwa wyższego oraz przechowywania jej w Ogólnopolskim Repozytorium Prac Dyplomowych oraz wewnętrznej bazie prac dyplomowych Uniwersytetu Ekonomicznego w Katowicach.
+Oświadczam, że poinformowano mnie o zasadach dotyczących oceny oryginalności pracy dyplomowej przez Jednolity System Antyplagiatowy.
+Oświadczam także, że ostateczna wersja pracy przesłana przeze mnie drogą elektroniczną jest zgodna z plikiem poddanym ocenie w Jednolitym Systemie Antyplagiatowym.
+Jednocześnie oświadczam, że jest mi znany przepis art. 233 § 1 Kodeksu karnego określający odpowiedzialność za składanie fałszywych zeznań.
+
+......................................................
+(podpis składającego oświadczenie)
+
+Spis treści
+
+Wstęp6
+1.Podstawy teoretyczne7
+1.1.Planowanie wypraw7
+1.1.1.Grupy społeczne8
+1.1.2.Zarządzanie, planowanie wypraw9
+1.1.3.Motywacje i potrzeby uczestnictwa w grupach11
+1.1.4.Wspólne aktywności sportowe jako forma budowania więzi społecznych12
+1.1.5.Nowoczesne technologie a relacje społeczne13
+1.2.Istniejące rozwiązania14
+1.2.1.Strava15
+1.2.2.Komoot15
+1.2.3.AllTrails16
+1.2.4.Hiiker17
+1.2.5.Analiza porównawcza18
+1.3.Aplikacja internetowa19
+1.3.1.Definicja aplikacji internetowej19
+1.3.2.Architektura i podejście warstwowe20
+Warstwa prezentacji i komunikacja z serwerem20
+Modele aplikacji internetowych21
+Warstwa logiki aplikacji22
+Warstwa danych22
+1.3.3.Relacyjne i nierelacyjne bazy danych23
+1.3.4.Wzorce projektowe – model MVC24
+2.Praktyczne podejście do aplikacji26
+2.1.Założenia i cele projektu26
+2.1.1.Opis aplikacji26
+2.1.2.Wymagania funkcjonalne i niefunkcjonalne27
+2.1.3.Architektura systemu28
+2.1.4.Wykorzystane technologie31
+2.2.Implementacja aplikacji32
+2.2.1.Konfiguracja środowiska (Spring Boot, Maven)32
+2.2.2.Modele danych i mapowanie bazy danych32
+2.2.3.Logika biznesowa32
+2.2.4.REST API32
+2.2.5.Warstwa frontendowa32
+2.3.Scenariusze użytkowe33
+Zakończenie34
+Literatura35
+Bibliografia35
+Pozycje zwarte i artykuły naukowe35
+Netografia36
+Raporty37
+Spis rysunków38
+Spis tabel39
+
+
+Wstęp
+Dynamiczny rozwój technologii internetowych sprawia, że aplikacje webowe stają się podstawowym narzędziem wspierającym organizację aktywności sportowych, społecznych i turystycznych. Łatwy dostęp do sieci oraz rosnące oczekiwania użytkowników wobec oprogramowania skłaniają do poszukiwania rozwiązań łączących funkcje organizacyjne z elementami platform społecznościowych. Szczególnie wyraźnie widać to w obszarze aktywności terenowych, gdzie dostępne narzędzia mimo szerokiej oferty, nie zapewniają w pełni zintegrowanego środowiska do planowania i zarządzania grupowymi wyprawami.
+Celem niniejszej pracy jest zaprojektowanie i wykonanie prototypu aplikacji internetowej wspomagającej organizację amatorskich wypraw górskich. Projekt obejmuje pełny proces wytwarzania oprogramowania: od analizy wymagań, przez projekt architektury systemu, aż po implementację warstwy backendowej oraz frontendowej. Turystyka górska stanowi obszar zastosowania projektowanej aplikacji, na podstawie którego określono wymagania funkcjonalne i niefunkcjonalne oraz opracowano założenia projektowe systemu.
+Praca składa się z dwóch rozdziałów. Rozdział pierwszy pełni funkcję wprowadzenia teoretycznego – omówiono w nim specyfikę planowania wypraw jako procesu organizacyjnego stanowiącego podstawę do sformułowania wymagań wobec systemu, dokonano analizy porównawczej istniejących rozwiązań rynkowych, a także przedstawiono podstawy techniczne budowy aplikacji internetowych. Rozdział drugi poświęcony jest praktycznej realizacji projektu: sformułowaniu wymagań, zaprojektowaniu architektury systemu i modelu danych, a następnie opisowi implementacji poszczególnych warstw aplikacji. Rozdział zamykają scenariusze użytkowe ilustrujące działanie gotowego prototypu.
+Praca stanowi realizację praktycznego projektu informatycznego, którego efektem jest działający prototyp aplikacji webowej. Przyjęte technologie i wzorce architektoniczne odzwierciedlają współczesne standardy wytwarzania oprogramowania, a zakres funkcjonalny systemu odpowiada realnym potrzebom zidentyfikowanym na etapie analizy.
+Podstawy teoretyczne
+W rozdziale omówiono zagadnienia teoretyczne związane z organizowaniem wspólnych wypraw oraz funkcjonowaniem grup w kontekście środowiska aplikacji internetowych. Omówione zostały takie aspekty jak planowanie i zarządzanie wyprawami, czynniki wpływające na uczestnictwo w grupach czy też znaczenie wspólnych aktywności sportowych w budowaniu relacji społecznych. Przedstawiono także rolę nowoczesnych technologii w komunikacji i organizacji działań grupy oraz dostępne rozwiązania wspierające aktywność turystyczno-sportową. Rozdział ten stanowi podstawę dla dalszej części pracy poświęconej projektowaniu aplikacji.  
+Planowanie wypraw
+Proces planowania wypraw górskich jest złożony, zawiera w sobie elementy organizacyjne, logistyczne oraz związane z odpowiednią komunikacją. Kluczową częścią jest tutaj zapewnienie wszystkim członkom grupy bezpieczeństwa oraz odpowiedniej jakości doświadczeń. Dlatego ważne jest przejrzyste określenie celu wyprawy, oczekiwań i wymagań stawianych potencjalnym uczestnikom. Jasno ustalone zasady i łatwy dostęp do informacji zwiększają efektywność współpracy w grupie oraz redukują ryzyko nieporozumienia (Wojciszke i Grzyb, 2024).
+Podczas projektowania aplikacji należy zwrócić szczególną uwagę na usystematyzowanie informacji, co pozwoli na odpowiednie zarządzanie nimi i przekazywanie klarownego komunikatu zainteresowanym danym wydarzeniem. W przypadku środowiska cyfrowego proces planowania wypraw odbywa się zazwyczaj w sieciach społecznych, gdzie można zaobserwować dużą dynamikę relacji pomiędzy użytkownikami. Wspólne uczestnictwo w wydarzeniach bywa jednorazowe, jednak zdarza się również, że pojedyncza wyprawa prowadzi do kolejnych, a to z kolei do budowania społeczności użytkowników. Powodem tego jest to, że wraz z wzrostem liczby wydarzeń, w których miało się okazję uczestniczyć, wzrasta również chęć brania udziału w kolejnych, a przeżywanie wspólnie wydarzeń buduje relacje pomiędzy zaangażowanymi (Smiljanić i Mitrović Dankulov, 2017). 
+Grupy społeczne
+Grupy osób, które organizują wspólne wyprawy górskie można określić mianem małych grup społecznych. Występują w nich bezpośrednie relacje oraz wysoki poziom współzależności pomiędzy członkami. Charakteryzują się również wspólnym celem (Szmatka, 2015). W środowisku aplikacji internetowej grupa taka staje się również jednym z podstawowych elementów struktury systemu, w obrębie którego organizowane są procesy planowania, komunikowania oraz zarządzania.
+Tworzenie się grup takiego rodzaju coraz częściej przenosi się do środowiska cyfrowego, za pomocą mediów społecznościowych czy innych, dedykowanych do tego platform oraz aplikacji. Relacje pomiędzy użytkownikami sieci mają charakter rozproszony, są oni członkami wielu wspólnot jednocześnie, często o zróżnicowanej tematyce (Wellman, 2001). W przypadku aplikacji objawia się to koniecznością umożliwienia im brania udziału w wielu wydarzeniach, śledzenia historii aktywności oraz budowania tym samym własnego profilu wskazującego na preferencje oraz poziom zaawansowania danej osoby.
+Ważnym aspektem funkcjonowania grup są więzi społeczne, których odzwierciedleniem jest poziom zaufania czy gotowość do współpracy. Silne więzi to podstawa do integracji oraz zmniejszenia ryzyka wykluczenia poszczególnych członków zgromadzenia. W środowisku aplikacji internetowej wiąże się to z implementacją mechanizmów umożliwiających dodawanie ocen, opinii, rekomendacji czy śledzenie aktywności w grupach.
+Zauważalny jest trend, w którym użytkownicy społeczności internetowych wykazują większe zaangażowanie w przypadku mniejszych zbiorowości, skupionych na konkretnej tematyce lub celu (Hwang & Foote, 2021). Dodatkowo mniej liczne grupy oraz takie skupiające się na wąskich, specjalistycznych tematach, wykazują większą aktywność od tych, posiadających szerszy zakres tematyczny oraz większą liczebność (Nudo i in., 2025). Kierując się tą obserwacją, aplikacja do organizacji wypraw górskich powinna pozwalać na tworzenie wydarzeń uwzględniając takie czynniki jak posiadane doświadczenie, tolerancja na ekspozycje czy konkretny cel wędrówki (szczyt) oraz umożliwiać tworzenie dodatkowych, mniejszych kolektywów.
+W odniesieniu do psychologii społecznej takie zespoły osób podlegają procesom dynamiki grupowej, między innymi kształtowaniu się ról. Role tworzą i opierają się na relacjach oraz interakcjach zachodzących pomiędzy członkami zespołu. Prowadzi to do odmiennych obowiązków oraz praw poszczególnych osób (Grotowska-Leder, 2014). W aplikacji mogą one zostać odzwierciedlone za pomocą zróżnicowanych uprawnień członków wyprawy, takich jak organizator, współorganizator oraz zwykły uczestnik. Klarowne określenie pełnionych funkcji i odpowiedzialności wpływa pozytywnie na szybkość przekazywanych informacji oraz zaufanie wewnątrz grupy. Usprawnia również cały proces zarządzania.
+Zarządzanie, planowanie wypraw
+Możliwość odpowiedniego planowania wypraw oraz zarządzania nimi w środowisku cyfrowym wymaga zintegrowania możliwości organizacyjnych, informacyjnych oraz komunikacyjnych. Aplikacja ma pełnić w tym przypadku rolę narzędzia do koordynacji, wspierającego proces przygotowania wyprawy i tym samym samą jej realizację. Wspomagać ma nie tylko samo gromadzenie oraz filtrowanie danych dotyczących aktywności, ale również przepływ bieżących informacji. Wymaga odpowiedniego zaprojektowania systemu tak, by odzwierciedlał specyfikę górskich wypraw. 
+Jednym z ważnych elementów organizacji wyprawy jest określenie stopnia trudności. W przypadku dróg wspinaczkowych wykorzystywana jest do tego skala UIAA (fr. Union Internationale des Associations d'Alpinisme), która polega na wycenie trudności przez wspinaczy podczas pokonywania trasy (Mandelli i Angriman, 2019). Jednak z uwagi na to, że jest ona nieobiektywna, gdyż opiera się na porównywaniu ścieżki z wcześniej już przebytymi jak i skupia się na wspinaczce – nie ma podstaw do wykorzystania jej w aplikacji dotyczącej pieszych, amatorskich wędrówek. W takiej sytuacji należy bazować na takich czynnikach jak długość trasy, przewyższenia, ukształtowanie terenu czy utrudnienia na trasie w postaci łańcuchów, drabinek czy elementów wspinaczkowych bez ułatwień.
+Kolejnym istotnym aspektem jest również określenie kwestii noclegu. W zależności od preferencji, wyprawę można zaplanować bez niego, jednak część tras może być dla niektórych ich uczestników bardzo wymagająca lub nawet niemożliwa do przejścia bez odpowiedniego odpoczynku. Ważne jest, aby zainteresowani byli świadomi założeń osoby przewodzącej inicjatywie. 
+W zależności od warunków atmosferycznych czy ukształtowania terenu może pojawić się sugestia, a nawet konieczność wykorzystania odpowiedniego sprzętu. Podczas zdobywania niektórych, bardziej stromych szczytów, takich jak np. Kościelec może pojawić się potrzeba założenia kasku w celu ochrony przed spadającymi kamieniami. W okresie zimowym wręcz podstawowym sprzętem są raczki, a w przypadku wyższych partii gór – raki oraz czekan. Aplikacja powinna być zaprojektowana w taki sposób, aby pozwalała na zamieszczenie takich informacji przez organizatora dla osób zainteresowanych dołączeniem do grupy.
+Zarządzanie wydarzeniami sportowymi oraz turystycznymi związane jest z odpowiednim planowaniem, koordynacją działań oraz efektywnym wykorzystaniem zasobów. Ma ono charakter złożony i obejmuje samo przygotowanie koncepcji wyprawy, jej organizację, realizację i ostatecznie kontrolę przebiegu kolejnych etapów (Grzeganek-Więcek, 2011). Wykorzystanie aplikacji internetowej może być tutaj ogromnym wsparciem poprzez porządkowanie informacji, klarowne ich wyświetlanie, umożliwienie łatwego przejścia od ogółu do szczegółu oraz sprawnej komunikacji dzięki powiadomieniom, np. podczas naniesienia zmian przez osobę zarządzającą, pojawienia się nowych treści czy zmiany składu grupy.
+Aktywności tego typu zazwyczaj realizowane są w kilkuosobowych grupach. W takiej sytuacji jedna osoba (organizator) jest w stanie samodzielnie sprostać przygotowaniu i zarządzaniu całym wydarzeniem: wybór trasy, określenie terminu wyjazdu, zorganizowanie transportu czy ewentualną rezerwacje noclegów. Jednak wraz z wzrostem liczebności grupy, zadanie te staje się coraz bardziej złożone i wymaga większej ilości pracy i lepszej koordynacji. W związku z tym istotnym elementem jest odpowiedni podział ról oraz rozdzielenie zadań tak, aby całość można było sprawnie przeprowadzić. Jak podkreśla Strugarek (2006) – organizacja imprez sportowych (w tym turystycznych) wymaga wyznaczenia osób, które odpowiedzialne będą za konkretne elementy wyprawy. Jak przedstawia Belbin w „Twoja rola w zespole” (2008), wyróżnić można 9 ról zespołowych, które dzielą się na 3 równe grupy: intelektualne, zadaniowe oraz socjalne. Zaznacza on, że zwykle posiadamy 2-3 dominujące role, a dla efektywności zespołu ważne jest, aby zawierał on mieszankę jak największej ich liczby. Dlatego właściwy podział obowiązków jest dla głównego organizatora nie lada wyzwaniem. Aplikacja może pozwalać na śledzenie historii ról, jakie przypisane były do użytkownika podczas wcześniejszych wypraw, co ułatwi organizatorom wypraw w rozdysponowywaniu zadań.
+Rejestrowanie i wymiana danych o trasach stanowi istotny element planowania aktywności górskiej w środowisku cyfrowym. Dane te są przechowywane w ustandaryzowanych formatach plików, co umożliwia ich odczytywanie przez różne urządzenia i aplikacje niezależnie od producenta. Spośród dostępnych formatów, w turystyce pieszej i górskiej powszechnie używany jest format GPX (ang. GPS Exchange Format). Zdefiniowany jest jako otwarty standard oparty na języku XML, służący do przechowywania danych GPS. W tym punktów orientacyjnych, zaplanowanych tras oraz zarejestrowanych śladów przejścia (TopoGrafix, 2004). Każdy punkt śladu zawiera współrzędne geograficzne, wysokość nad poziomem morza oraz znacznik czasu rejestracji, co umożliwia późniejszą analizę przebiegu wyprawy.
+Format GPX jest obsługiwany przez zdecydowaną większość odbiorników GPS przeznaczonych dla turystów oraz przez aplikacje do aktywności terenowych. Jego otwarta specyfikacja sprawia, że plik zarejestrowany na urządzeniu jednego producenta może być odczytany i przetworzony przez dowolną aplikację obsługującą ten format, bez konieczności konwersji danych.
+Alternatywą dla GPX jest format GeoJSON, oparty na notacji JSON. Bywa wykorzystywany w aplikacjach webowych oraz interfejsach API wymiany danych geograficznych, jednak urządzenia GPS rzadko umożliwiają bezpośredni eksport danych w takiej formie. Innym formatem jest KML (ang. Keyhole Markup Language), opracowany przez Google i stosowany przede wszystkim w usługach Google Maps oraz Google Earth – jego zastosowanie poza nimi jest ograniczone.
+Planowanie wypraw górskich w środowisku cyfrowym wymaga dostępu do danych geograficznych obejmujących informacje o szczytach, schroniskach oraz innych obiektach istotnych przy organizacji trasy. Dane takie udostępniane są przez wyspecjalizowane bazy danych geograficznych, różniące się zakresem, szczegółowością i modelem dostępu.
+GeoNames jest jedna z takich baz danych, zawiera ponad jedenaście milionów nazw geograficznych z całego świata i obejmuje punkty kluczowe przy wędrówkach górskich (GeoNames, b.d.). Dane udostępniane są na licencji Creative Commons Attribution 4.0 i mogą być pobrane w całości do lokalnego systemu. Taki model dystrybucji umożliwia integrację danych geograficznych z aplikacją bez konieczności korzystania z zewnętrznych interfejsów w czasie jej działania, co zapewnia niezależność systemu od dostępności zewnętrznych serwisów.
+OpenStreetMap jest otwartą bazą danych geograficznych, współtworzoną przez wolontariuszy na całym świecie (OpenStreetMap Foundation, b.d.). Wyróżnia się szczegółowością – obejmuje szlaki piesze, drogi, rzeźbę terenu oraz punkty orientacyjne. Dane dostępne są na licencji Open Database License. Dostęp do nich możliwy jest za pośrednictwem wyspecjalizowanego interfejsu lub poprzez pobranie pełnego zestawu danych, co w tym drugim przypadku wiąże się z koniecznością posiadania znacznych zasobów obliczeniowych i własnej infrastruktury serwerowej do ich przetworzenia.
+Natural Earth jest bezpłatnym zestawem danych kartograficznych opracowanym przez wolontariuszy i wspieranym przez organizację NACIS (ang. North American Cartographic Information Society) (Natural Earth, b.d.). Dostępny jest w trzech skalach szczegółowości i obejmuje elementy takie jak ukształtowanie terenu, zbiorniki wodne, granice administracyjne i miejscowości. Zestaw ten przeznaczony jest przede wszystkim do wizualizacji kartograficznej na małej skali, co ogranicza jego przydatność do identyfikacji konkretnych obiektów terenowych istotnych z punktu widzenia planowania wypraw górskich.
+Motywacje i potrzeby uczestnictwa w grupach
+Łączenie się w grupy jest dla ludzi naturalnym procesem. Pozwala realizować wspólne plany, cele, niejednokrotnie takie, których osiągniecie bez wsparcia byłoby o wiele trudniejsze a czasami nawet niemożliwe. Powody stojące za decyzją działania w kolektywie mogą być bardzo różne – chęć kontaktu z innym człowiekiem, budowania tożsamości, potrzeba wsparcia czy właśnie osiąganie konkretnych założeń.
+Potrzeba przynależności jest jedną z większych motywacji do łączenia się w grupy. Zajmuje ona istotne miejsce w piramidzie naszych potrzeb i daje poczucie bycia częścią czegoś większego oraz budowania relacji międzyludzkich (zob. rysunek 1) (Maslow, 2006). Regularny kontakt, wspólne doświadczanie oraz systematyczne pielęgnowanie więzi pozwalają poczuć, że nie jest się samym. Nowoczesne technologie mogą być w tej kwestii nieocenionym wsparciem, niwelując problem odległości i pozwalając na komunikowanie się osób oddalonych o setki a nawet tysiące kilometrów.
+Rysunek 1. Hierarchia potrzeb według Maslowa
+Źródło: opracowanie własne na podstawie Maslow (2006)
+Działanie w grupie odgrywa również rolę w budowania tożsamości. Bycie członkiem społeczności, z którą dzieli się system wartości, ideały czy sposób działania, sprawia, że można się z nią identyfikować. Wpływa to pozytywnie na samoocenę i to jak ludzie postrzegają siebie (Wojciszke i Grzyb, 2024). Uczestnictwo w wyprawach górskich może być potwierdzeniem własnych umiejętności. Warto wspomnieć tutaj, że dla niektórych osób pozycja w grupie oraz pełnienie danej roli może mieć istotne znaczenie przy budowania poczucia własnej wartości (Grotowska-Leder, 2014).
+Ważnym aspektem życia są także emocje. Wspólne ich przeżywanie w gronie osób sprzyja wzmacnianiu więzi i poczuciu jedności. W sytuacjach związanych z dużym wysiłkiem i ryzykiem ważne jest wzajemne udzielanie sobie różnego rodzaju wsparcia. Jest to ważne w sytuacjach związanym z dużym wysiłkiem fizycznym, w których pojawia się ryzyko kontuzji (Brown, 2006).
+Osiągnięcie celu wymaga współpracy członków ekipy i odpowiedniego, wzajemnego dopasowania. W małych grupach społecznych występują silne powiązania pomiędzy poszczególnymi osobami (Szmatka, 2015). W kontekście wypraw górskich jest to mocno widoczne, opierają się one bowiem na osiąganiu konkretnych celów (szczytów). Narzędzia cyfrowe mogą być w tym przypadku bardzo pomocne w doborze odpowiednich współuczestników jak i śledzeniu osiągniętych celów.
+Wspólne aktywności sportowe jako forma budowania więzi społecznych
+Aktywności sportowe pełnią ważną rolę w kontekście budowania więzi społecznych. Są przestrzenią do poznawania nowych osób, pielęgnowania relacji i budowania społeczności. Sport może być formą integracji i tworzenia trwałych znajomości. Jest obszarem, w którym uczestnicy uczą się przestrzegania zasad, wzajemnego szacunku, zdrowej rywalizacji oraz współpracy (Jakubowska i Nosal, 2017).
+Rekreacja wspomaga bezpośrednie kontakty międzyludzkie i tworzenie się relacji dzięki systematycznym interakcjom. Aktywności realizowane w grupach wymagają dobrej komunikacji, współdziałania oraz dostosowania się do większości. Dzięki temu są dobrym polem do doświadczania i uczenia się działania w społeczności. Zorganizowane formy aktywności, również sportowej wspierają budowanie relacji, umożliwiając systematyczne interakcje pomiędzy uczestnikami (Putnam, 2008). Wspólne treningi, zawody czy wyprawy górskie dają ludziom przestrzeń do wzajemnego poznawania się i zacieśniania więzów.
+Ważnym pojęciem, które umożliwia wyjaśnienie roli sportu w budowaniu więzi społecznych jest kapitał społeczny omawiany przez Roberta Putnama (2008). Autor definiuje go między innymi jako normy i zaufanie, które pomagają w współpracy i koordynacji, celem osiągnięcia wspólnych korzyści.
+Duże znaczenie w procesie budowania więzi społecznych mają wspólne doświadczenia. Sport wywołuje w ludziach intensywne emocje takie jak satysfakcja z osiągnięcia celu czy radość z sukcesu. Takie przeżycia emocjonalne dzielone z innymi wzmacniają relacje międzyludzkie (Jakubowska i Nosal, 2017).
+Putnam w „Samotnej grze w kręgle” (2008) porusza problem spadku zaangażowania w życie społeczne. Aktywności sportowe mogą być alternatywą dla innych, zanikających form. Wyprawy górskie w ostatnich latach cieszą się rosnącym zainteresowaniem, co zauważyć można po trendzie widocznym na rysunku 2. 
+
+Rysunek 2. Liczba turystów odwiedzających TPN w latach 2020–2025
+Źródło: opracowanie własne na podstawie TPN (2026)
+Zgodnie z danymi, które udostępnione zostały przez TPN (Tatrzański Park Narodowy), w roku 2025 Tatry odwiedziło nieco ponad 5,266 mln. turystów. W roku 2024 było to około 5,081 mln odwiedzających, a w roku 2020 – około 3,424 mln. (Naszemiasto Zakopane, 2025). W nawiązaniu do tych informacji można dostrzec potencjał na budowanie więzi w ramach aktywności społecznych.
+Nowoczesne technologie a relacje społeczne
+Rozwój nowoczesnych technologii miał duży wpływ na relacje międzyludzkie. Do życia na dobre zagościł Internet, sieci społecznościowe oraz aplikacje mobilne zmieniając to w jaki sposób ludzie komunikują się ze sobą. Inicjowanie relacji społecznych częściowo przeniosło się do świata cyfrowego, a niektóre z nich mają swoją kontynuacje poza nim. Dla młodych pokoleń, które miały okazje poznawać świat z wszechobecnym dostępem do sieci, jest to naturalne środowisko do budowania relacji. Nowoczesne technologie stają się jednym z podstawowych medium do komunikacji (Dębski i Bigaj, 2019).
+Dzięki rozwojowi technologicznemu pojawiły się dodatkowe sposoby kontaktowania się ze sobą, które pozwalają na praktycznie natychmiastową wymianę informacji, bez względu na miejsce i czas. Czerwiński (2020) wspomina o rewolucji komunikacyjnej, która zatarła granice polegającą na podziale na nadawcę oraz odbiorcę. Wpływa to pozytywnie na częstotliwość kontaktu. Dodatkowo możliwe jest systematyczne podtrzymywanie kontaktu, który kiedyś mógłby ulec osłabieniu np. ze względu na duży dystans.
+Nowe technologie mogą być wsparciem w budowaniu relacji oraz poczuciu przynależności, jeśli wykorzystywane są w odpowiedni sposób (Dębski i Bigaj, 2019). Świat cyfrowy umożliwia kontakt z rówieśnikami i poszerza horyzonty. Autorzy zwracają jednak uwagę, że nieodpowiednie korzystanie z nowoczesnych narzędzi może być przyczyną płytkich relacji i poczucia izolacji czy odrzucenia. Dlatego należy zwrócić szczególną uwagę na sposób korzystania z dostępnych technologii i efekty jakie to przynosi.
+Sama technologia nie określa jakości relacji społecznych, jest to tylko narzędzie, które wykorzystane w odpowiedni sposób, może prowadzić do jej poprawy (Soler, 2018). Możliwości jakie dają portale społecznościowe czy komunikatory mogą ułatwić nawiązywanie, podtrzymywanie oraz rozwijanie relacji. Łączenie się w grupy tematyczne osób o podobnych zainteresowaniach w celu wymiany doświadczeń czy organizowania wspólnych aktywności jest ułatwione dzięki narzędziom cyfrowym.
+Współczesne relacje operują w ramach złożonych sieci, mających wymiar technologiczny jak i społeczny. Narzędzia cyfrowe pozwalają na zawieranie i podtrzymywanie relacji, w których uwidaczniają się różne pozycje oraz role poszczególnych osób (Kamola i Arabas, 2018). Ułatwia to organizowanie działań grupy, poprawia przepływ informacji i buduje zaufanie wśród członków.
+Istniejące rozwiązania
+Analiza rozwiązań dostępnych na rynku jest istotnym elementem procesu projektowania aplikacji internetowych, umożliwiającym identyfikację funkcjonalności oraz ograniczeń istniejących rozwiązań. Pozwala na określenie, jakie potrzeby użytkowników są już przez nie spełnione oraz w jaki sposób zostało to zrealizowane. Przegląd pomaga także odnaleźć obszary, które wymagają dalszego rozwoju, usprawnienia oraz takie, które zostały zupełnie pominięte.
+Strava
+Pierwszy z przykładów – Strava (Strava, b.d.), nie jest narzędziem dedykowanym turystyce górskiej, oferuje jednak funkcjonalności, które mogą być wykorzystane podczas tego typu aktywności, dlatego warto się jej przyjrzeć. Podstawową funkcjonalnością jest rejestrowanie trasy z wykorzystaniem technologii GPS, pozwala to na analizę dystansu, długości treningu czy pokonanego przewyższenia oraz wielu innych parametrów. Takie dane mogą być wykorzystywane do oceny trudności trasy oraz porównywania innych wypraw. Możliwe jest przeglądanie tras udostępnianych przez innych, jednak zakres informacji dotyczący specyfiki górskiej jest ograniczony. System służy przede wszystkim jako narzędzie rejestrujące i analizujące aktywności, a nie wspomaga w procesie ich planowania.
+Aplikacja ma szerokie zastosowanie w sportach wytrzymałościowych, takich jak bieganie czy jazda na rowerze. Pozwala na analizę aktywności, monitorowanie postępów i porównywanie wyników. Ciekawym rozwiązaniem są segmenty, które pozwalają na rywalizacje pomiędzy użytkownikami na konkretnych odcinkach tras. Zwiększa to motywację do brania udziału w aktywnościach oraz sprzyja systematycznemu trenowaniu.
+Rozbudowane funkcje społecznościowe umożliwiają użytkownikom wzajemne obserwowanie swoich aktywności, komentowanie ich oraz zostawianie reakcji. Dostępne są również grupy (kluby), zrzeszające użytkowników o podobnych zainteresowaniach sportowych lub mieszkających w jednym regionie, co sprzyja organizowaniu wspólnych treningów. Wspiera to integracje użytkowników jednak system skupia się na dzieleniu się wynikami i osiągnięciami, a proces planowania i koordynacji wypraw jest drugorzędny.
+Komoot
+Kolejnym narzędziem jest Komoot (Komoot, b.d.). Wspiera planowanie aktywności w plenerze, w tym również wypraw górskich. Pozwala na tworzenie tras z uwzględnieniem takich parametrów jak długość, przewyższenia, rodzaj nawierzchni czy poziom trudności, co umożliwia dopasowanie ich do umiejętności i doświadczenia użytkownika. Ważnym elementem jest dostęp do map offline oraz funkcji nawigacyjnych, co zwiększa użyteczność aplikacji w górach. Możliwe jest również korzystanie z tras udostępnionych przez innych. Zawierają one często opisy oraz materiały wizualne, będące nieocenioną pomocą. Komoot wspomaga przede wszystkim proces planowania jak i realizacji wyprawy. 
+Aplikacja obsługuje wiele aktywności plenerowych, takich jak turystyka piesza, jazda na rowerze czy bieganie. Umożliwia dostosowanie tras do konkretnego rodzaju aktywności co wpływa na ich przebieg oraz charakter. W szczególności dobrze sprawdza się w kontekście planowania trasy oraz orientowania w terenie. W przeciwieństwie do opisanej wcześniej Stravy, Komoot nie posiada rozbudowanej funkcjonalności związanej z analizą wyników czy rywalizacją. Obniża to jego atrakcyjność do wykorzystania w sportach wyczynowych.
+System oferuje podstawowe funkcje społecznościowe takie jak udostępnianie tras, zdjęć czy też opisów zrealizowanych wypraw. Użytkownicy mają możliwość przeglądania aktywności innych osób oraz inspirowania się ich doświadczeniami. Pomaga to w dzieleniu się informacjami, nie jest to jednak najważniejszy element aplikacji. Możliwe jest również dzielenie się z innymi, swoimi zaplanowanymi trasami, nie uświadczymy za to bardziej rozbudowanych funkcji zarządzania grupą czy kanałów komunikacji. 
+AllTrails
+AllTrails (AllTrails, b.d.) jest narzędziem przeznaczonym między innymi do turystyki pieszej oraz górskiej. Oferuje dostęp do rozbudowanej bazy tras. Pozwala na filtrowanie ich według takich kryteriów jak długość, czas przejścia, poziom trudności, przewyższenie i wiele innych. Umożliwia to zaplanowanie wyprawy dopasowanej do umiejętności użytkownika. Ważnym elementem są opinie i oceny, które dostarczają cennych informacji na temat przebiegu szlaków i czego można się spodziewać podczas ich pokonywania. Oprogramowanie to jest wsparciem głównie podczas wyboru trasy i przygotowania się do jej przejścia.
+Aplikacja ta znajduje zastosowanie głównie w aktywnościach rekreacyjnych, takich jak turystyka piesza oraz górska, ale również w biegach terenowych, jeździe na rowerze, a nawet konnej, na nartach czy też off-road. Podobnie jak poprzednik, nie posiada funkcji umożliwiających analizę treningów. Brak tutaj również takich elementów jak możliwość rywalizacji czy monitorowanie postępów. Prostota tego narzędzia sprawia, że jest przyjazna dla niedoświadczonych użytkowników.
+Funkcje społecznościowe w tej aplikacji skupiają się przede wszystkim na dzieleniu się opiniami, ocenami oraz materiałami wizualnymi z tras. Taka wymiana informacji wspiera proces doboru aktywności odpowiedniej dla stopnia zaawansowania zainteresowanej osoby. Dostępne jest planowanie oraz udostępnianie tras – może to być wykorzystywane podczas planowania wspólnych aktywności. Są to jednak podstawowe funkcjonalności i brakuje narzędzi wspomagających organizacji i zarządzaniu wyprawami.
+Hiiker
+Ostatnie opisywane narzędzie – Hiiker (Hiiker, b.d.) dedykowane jest turystyce pieszej, z szczególnym naciskiem na długodystansowe wędrówki górskie. Pozwala na przeglądanie oraz planowanie tras oraz ich podział na etapy. Ważnym elementem jest możliwość uwzględniania infrastruktury turystycznej takiej jak miejsca noclegowe czy punkty zaopatrzenia, co pomaga w organizacji wyprawy. Dostępne są mapy offline oraz funkcje nawigacyjne, które zwiększają użyteczność aplikacji na terenach górskich, z ograniczonym dostępem do internetu. Funkcje takie jak obsługa plików GPX oraz waypointy czyli punkty orientacyjne wspomagają szczegółowe planowanie tras.
+Dużym plusem aplikacji jest skupienie na tematyce górskiej. Może ona być co prawda wykorzystana również w innych aktywnościach uprawianych na świeżym powietrzu, jednak brak funkcjonalności związanej z analizą wyników nie zachęca do takiego jej stosowania. Innym czynnikiem działającym na jej niekorzyść również w kontekście górskich wędrówek jest jej popularność. Używana jest przede wszystkich na zachodzie Europy z szczególnym naciskiem na Wielką Brytanię oraz Niemcy, gdzie dostępna jest ogromna liczba tras, w przeciwieństwie do terenu naszego kraju.
+System pełni przede wszystkim rolę oprogramowania do planowania. Funkcje społecznościowe są co prawda dostępne, mają jednak ograniczony charakter i nie obejmują narzędzi do komunikacji czy zarządzania wyprawami. Aplikacja jak jej poprzednicy pozwala na tworzenie tras i dzielenie się nimi oraz przeglądanie tych udostępnionych przez innych użytkowników. Jest to wsparciem w kontekście wyboru oraz przygotowania aktywności. 
+Analiza porównawcza
+W celu oceny najistotniejszych funkcjonalności wykorzystywanych w przedstawionych aplikacjach przeprowadzono ich analizę porównawczą. Ma ona na celu określenie rozwiązań stosowanych w istniejących systemach, wykrycie obszarów wymagających poprawy podczas projektowania własnej aplikacji. 
+Porównanie zostało przeprowadzone w oparciu o 11 kryteriów kluczowych dla narzędzia służącego do organizacji wspólnych wypraw górskich. Każda z aplikacji została oceniona w skali od 1 do 5 w zależności od dostępności i rozbudowania rozwiązania. Na wynik wpływ miało również to, czy funkcja dostępna jest w wersji darmowej czy wymagana jest subskrypcja. Idealnym przykładem jest tutaj tworzenie tras w Stravie, które wymaga płatnej wersji aplikacji, gdy w pozostałych dostępne jest dla każdego. Kryteria ocen prezentują się następująco: 1 – brak lub niedostępna w darmowej wersji, 2 – szczątkowa lub wyłącznie płatna, 3 – obecna z ograniczeniami, 4 – dobra implementacja z miejscami do poprawy, 5 – rozwiązanie wzorowe. Wyniki przedstawione zostały w tabeli 1.
+Tabela 1. Ocena funkcjonalności aplikacji
+
+Źródło: Opracowanie własne.
+Przeprowadzona analiza pokazuje, że istniejące rozwiązania skupiają się na niektórych z ważnych obszarów, jednak nie łączą z sobą w pełni funkcjonalności związanych z organizacją, planowaniem i zarządzaniem grupowymi wyprawami górskimi. Pokrycie obszarów, które zostały pominięte lub zrealizowane w sposób niezadowalający, mogą stanowić istotny element aplikacji i wyróżniać ją na tle pozostałych.
+Aplikacja internetowa
+Definicja aplikacji internetowej
+Aplikacje internetowe są istotnym elementem współczesnego oprogramowania, które wykorzystywane jest do realizacji różnorakich usług dostępnych przy pomocy nowoczesnych technologii. W odróżnieniu od tradycyjnych aplikacji, które instalowane są na sprzęcie użytkowników, działają one na serwerach i udostępniane są użytkownikom za pośrednictwem przeglądarek internetowych. Pozwala to na łatwy dostęp do ich funkcjonalności bez potrzeby instalowania dodatkowego oprogramowania (Rychlicki-Kicior, 2010).
+Podstawą działania takich aplikacji jest model klient-serwer, w którym to przeglądarka odgrywa rolę klienta, wysyłającego zapytania do serwera. Serwer zaś odpowiada za przetwarzanie otrzymywanych zapytań, wykonywanie operacji zgodnie z logiką aplikacji oraz komunikowanie się z bazą danych. Po przetworzeniu danych generuje odpowiedź, która przesyłana jest do klienta, a więc przeglądarki użytkownika w postaci strony internetowej, zestawu danych (Layka, 2015). 
+Istotną cechą aplikacji webowych jest centralne zarządzanie systemem. Oznacza to, że wszelkie aktualizacje oraz zmiany prowadzone są po stronie serwera. Dzięki temu użytkownicy mają dostęp zawsze do aktualnej wersji systemu, bez konieczności instalowania aktualizacji na swoim sprzęcie. Dzięki takiemu centralnemu rozwiązaniu, możliwe jest systematyczne wprowadzanie nowych funkcjonalności i rozwój systemu. Pomaga to również w jego sprawnym utrzymywaniu (Rychlicki-Kicior, 2010).
+Aplikacje internetowe są współcześnie powszechnie stosowane w wielu różnych obszarach, takich jak: handel, zarządzanie informacją, portale społecznościowe czy też organizacja wydarzeń. Funkcjonalność takich systemów może ograniczać się do prezentacji danych, ale może być również o wiele bardziej rozwinięta i obejmować zaawansowane operacje jak przetwarzanie skomplikowanych informacji, zarządzanie użytkownikami czy też komunikację pomiędzy nimi (Layka, 2015).
+Architektura i podejście warstwowe
+Architektura określa sposób organizacji konkretnych składników systemu i zachodzące pomiędzy nimi relacje. Odpowiednio zaprojektowana pozwala uporządkować strukturę aplikacji, poprawiając jej czytelność i ułatwiając jej dalszą rozbudowę. Jak przedstawia Martin (2022) – architektura oprogramowania powinna być zaprojektowana tak, aby konkretne elementy systemu były od siebie możliwie jak najbardziej niezależne. Jest to kluczowe w kontekście rozwoju aplikacji jak również przy wprowadzaniu do niej zmian.
+Powszechnym sposobem budowy aplikacji webowych jest architektura warstwowa. Takie rozwiązanie polega na podziale oprogramowania na części, z których każda odpowiedzialna jest za realizację konkretnych, określonych funkcji. Zazwyczaj wyróżnia się warstwy prezentacji, logiki oraz danych (Rychlicki-Kicior, 2010).
+Zastosowanie odpowiedniej architektury ma duże znaczenie zwłaszcza w przypadku rozbudowanych systemów, posiadających złożone funkcjonalności oraz obsługujących wielu użytkowników. W takiej sytuacji odpowiedni podział systemu na elementy związane z interfejsem użytkownika, przetwarzaniem oraz zarządzaniem danymi jest kluczowy. Wpływa to pozytywnie na przejrzystość całej aplikacji oraz umożliwia łatwiejszy jej rozwój oraz utrzymanie (Martin, 2022).
+Warstwa prezentacji i komunikacja z serwerem
+Pierwsza z nich – warstwa prezentacji służy do interakcji z użytkownikiem oraz prezentowania informacji w przeglądarce internetowej. Składają się na nią elementy interfejsu użytkownika takie jak formularze, widoki czy obsługa działań podejmowanych podczas korzystania z systemu. Jej zadaniem jest także przekazywanie do dalszego przetwarzania przez system zapytań użytkownika. W praktyce odpowiada ona za wyświetlanie treści, umożliwianie wprowadzanie danych przez użytkownika i przekazywanie ich do kolejnych modułów. Interfejs jest podstawowym elementem komunikacji pomiędzy aplikacją a zainteresowanym. Natomiast informacje przekazywane są z klienta (przeglądarki) do serwera za pomocą zapytań HTTP (ang. Hypertext Transfer Protocol), które realizowane są za pomocą poszczególnych metod. Dwiema najczęściej używanymi metodami HTTP są GET oraz POST. Pierwsza służy do pobierania danych z serwera, natomiast druga odpowiada za przesyłanie danych wprowadzanych przez użytkownika do dalszego przetwarzania po stronie serwera (Layka, 2015). W architekturze REST (ang. Representational State Transfer), wykorzystywane są również metody PUT, PATCH oraz DELETE, służące odpowiednio do aktualizacji oraz usuwania danych. PUT odpowiada za zastąpienie całego zasobu, natomiast PATCH umożliwia wprowadzanie częściowych zmian. Dzięki wykorzystaniu metod HTTP warstwa prezentacji może komunikować się z pozostałymi komponentami systemu. W nowoczesnych aplikacjach internetowych mechanizmy te często wykorzystywane są w architekturze REST stanowiącej jeden z najpopularniejszych sposobów projektowania komunikacji pomiędzy klientem a serwerem (Walls, 2019).
+Architektura REST rozwija przedstawiony model komunikacji, wprowadzając zestaw zasad organizujących sposób wymiany danych pomiędzy klientem a serwerem. W podejściu tym system traktowany jest jako zbiór zasobów, do których dostęp odbywa się poprzez ujednolicony interfejs. Kluczowym założeniem REST jest bezstanowość, co oznacza, że każde zapytanie kierowane z warstwy prezentacji zawiera komplet informacji niezbędnych do jego obsługi. Pozwala to na uproszczenie komunikacji oraz zwiększenie skalowalności aplikacji. Architektura ta znajduje zastosowanie w tworzeniu interfejsów API, które umożliwiają współpracę pomiędzy warstwą prezentacji a logiką aplikacji w sposób niezależny i uporządkowany. W efekcie warstwa prezentacji może funkcjonować jako odrębny komponent systemu, komunikujący się z serwerem za pomocą ustandaryzowanych mechanizmów (Walls, 2019).
+Jednym z istotnych elementów warstwy prezentacji są technologie wykorzystywane do tworzenia interfejsu użytkownika. Wśród stosowanych rozwiązań znajdują się biblioteki i frameworki takie jak React i Angular.
+React jest biblioteką języka JavaScript wykorzystywaną do tworzenia interfejsów aplikacji internetowych. Podstawą jej działania jest komponentowy model budowy interfejsu, w którym poszczególne elementy widoku tworzone są jako niezależne komponenty. Mogą one zawierać własną logikę i stan oraz być wykorzystywane w różnych częściach aplikacji. React umożliwia również dynamiczną aktualizację interfejsu w odpowiedzi na zmiany danych, bez konieczności przeładowywania całej strony (Stefanov, 2021).
+Angular jest frameworkiem opartym na języku TypeScript i przeznaczonym do tworzenia aplikacji internetowych. Podobnie jak React wykorzystuje komponentowy sposób budowy interfejsu, ale udostępnia również dodatkowe mechanizmy wspierające tworzenie całej aplikacji. Obejmują one między innymi routing, obsługę formularzy, komunikację z serwerem oraz wstrzykiwanie zależności. Angular zapewnia również określony sposób organizacji aplikacji, ułatwiający podział jej elementów na współpracujące ze sobą komponenty (Freeman, 2022).
+React i Angular umożliwiają tworzenie interaktywnych interfejsów, jednak różnią się zakresem funkcji dostępnych w podstawowym rozwiązaniu. React koncentruje się przede wszystkim na tworzeniu interfejsu użytkownika i może być uzupełniany dodatkowymi bibliotekami, natomiast Angular dostarcza większy zestaw mechanizmów wspierających budowę aplikacji w ramach jednego frameworka (Stefanov, 2021; Freeman, 2022).
+Uzupełnieniem technologii wykorzystywanych do tworzenia interfejsu użytkownika są frameworki CSS, które służą przede wszystkim do określania jego wyglądu i układu. Do takich rozwiązań należą między innymi Tailwind CSS oraz Bootstrap.
+Tailwind CSS jest frameworkiem wykorzystującym podejście utility-first. Oferuje gotowe klasy, za pomocą których można określać wygląd poszczególnych elementów, między innymi ich kolory, rozmiary i odstępy. Style mogą być przypisywane bezpośrednio do elementów interfejsu. Framework umożliwia również tworzenie responsywnych stron oraz dostosowanie wybranych ustawień do potrzeb projektu (Kortas, 2022).
+Bootstrap jest frameworkiem zawierającym zestaw gotowych komponentów interfejsu, takich jak przyciski, formularze czy elementy nawigacji. Udostępnia także system siatki, który ułatwia tworzenie układów dostosowujących się do różnych rozmiarów ekranu. Wykorzystanie gotowych elementów pozwala szybciej przygotować podstawowy wygląd aplikacji (Jakobus i Marah, 2018).
+Oba rozwiązania umożliwiają tworzenie responsywnych interfejsów, ale różnią się sposobem pracy. Bootstrap opiera się głównie na gotowych komponentach i stylach, natomiast Tailwind CSS wykorzystuje klasy użytkowe, które pozwalają samodzielnie określać wygląd poszczególnych elementów. Wybór odpowiedniego rozwiązania zależy między innymi od potrzeb projektu oraz sposobu tworzenia interfejsu (Kortas, 2022; Jakobus i Marah, 2018).
+Współczesne aplikacje internetowe często wykorzystują mapy oraz dane geograficzne do prezentowania lokalizacji, tras i innych obiektów przestrzennych. Do realizacji takich funkcji dostępne są różne biblioteki i interfejsy programistyczne, różniące się zakresem możliwości oraz sposobem integracji z aplikacją. Do przykładowych rozwiązań należą Leaflet, Google Maps JavaScript API oraz OpenLayers.
+Leaflet jest otwartoźródłową biblioteką JavaScript przeznaczoną do tworzenia interaktywnych map w aplikacjach internetowych. Umożliwia wyświetlanie różnych warstw mapowych oraz danych geograficznych, takich jak punkty, linie czy obszary. Dzięki temu może być wykorzystywana między innymi do prezentowania tras oraz lokalizacji na mapie (Iacovella, 2017).
+Google Maps JavaScript API umożliwia osadzanie interaktywnych map w aplikacjach internetowych oraz korzystanie z usług i danych udostępnianych przez Google. Pozwala między innymi na wyświetlanie map, dodawanie własnych elementów oraz prezentowanie informacji geograficznych w aplikacji (Google for Developers, b.d.-b).
+OpenLayers jest otwartoźródłową biblioteką JavaScript służącą do tworzenia interaktywnych map internetowych. Obsługuje różne rodzaje warstw oraz formaty danych geograficznych, dzięki czemu może być wykorzystywana w aplikacjach wymagających rozbudowanej obsługi danych przestrzennych (Iacovella, 2017).
+Wszystkie trzy rozwiązania pozwalają na tworzenie interaktywnych map w aplikacjach internetowych, jednak różnią się zakresem możliwości oraz sposobem wykorzystania. Leaflet i OpenLayers są bibliotekami otwartoźródłowymi, natomiast Google Maps JavaScript API jest usługą udostępnianą w ramach Google Maps Platform. Korzystanie z tej usługi odbywa się w modelu zależnym od wykorzystania, przy czym poszczególne usługi obejmują określone limity bezpłatnego wykorzystania, a po ich przekroczeniu naliczane są opłaty (Google for Developers, b.d.-a).
+Modele aplikacji internetowych
+Jak wspomniano wcześniej, warstwa prezentacji odpowiada za obsługę interakcji z użytkownikiem oraz prezentowanie informacji. Sposób realizacji tych zadań zależy między innymi od przyjętego modelu aplikacji. W przypadku aplikacji internetowych można wyróżnić między innymi aplikacje wielostronicowe MPA (ang. Multi Page Application) oraz aplikacje jednostronicowe SPA (ang. Single Page Application). Pierwszy z modeli opiera się na generowaniu widoków po stronie serwera, gdzie każda interakcja użytkownika powoduje przeładowanie całej strony oraz ponowne pobranie jej zawartości. Podejście to jest charakterystyczne dla tradycyjnych aplikacji internetowych i wiąże się z prostszą strukturą po stronie klienta, jednak może wpływać na mniejszą płynność działania interfejsu. Z kolei w modelu SPA logika odpowiedzialna za obsługę interfejsu użytkownika w większym stopniu realizowana jest po stronie klienta, a aktualizacja widoku odbywa się dynamicznie bez konieczności przeładowania całej strony. Rozwiązanie to pozwala na zwiększenie responsywności aplikacji oraz poprawę doświadczenia użytkownika. SPA wykorzystują w szerokim zakresie język JavaScript oraz mechanizmy komunikacji asynchronicznej z serwerem, co wpisuje się w nowoczesne podejście do tworzenia aplikacji internetowych (Flanagan, 2021).
+Warstwa logiki aplikacji
+Kolejna jest tzw. warstwa logiki aplikacji, która realizuje funkcje związane z przetwarzaniem otrzymanych danych i wykonywaniem operacji odpowiednich dla danego systemu. To właśnie w tej warstwie znajduje się kod odpowiedzialny za funkcjonalność aplikacji, obejmujący implementację reguł działania systemu oraz obsługę poszczególnych procesów. Znajdują się tutaj również mechanizmy walidacji danych, autoryzacji i uwierzytelniania użytkowników, które zapewniają poprawność i bezpieczeństwo przetwarzanych informacji. Warstwa logiki aplikacji odpowiada także za analizę danych przekazywanych z warstwy prezentacji, podejmowanie decyzji dotyczących dalszego działania systemu oraz przygotowanie odpowiedzi zwracanej użytkownikowi. Pełni ona również funkcję pośrednika pomiędzy interfejsem a danymi, koordynując przepływ informacji pomiędzy poszczególnymi elementami systemu (Rychlicki-Kicior, 2010). W praktyce warstwa ta realizowana jest z wykorzystaniem języków programowania po stronie serwera, takich jak Java, Python czy C#, w których implementowana jest logika biznesowa aplikacji. Obejmuje ona kod odpowiedzialny za przetwarzanie danych, realizację operacji wykonywanych przez użytkowników oraz egzekwowanie reguł działania systemu. Dzięki zastosowaniu języków backendowych możliwe jest tworzenie skalowalnych i wydajnych aplikacji, które są w stanie obsługiwać wielu użytkowników jednocześnie oraz realizować złożone operacje w sposób uporządkowany i bezpieczny.
+Java jest statycznie typowanym językiem programowania kompilowanym do kodu bajtowego wykonywanego przez maszynę wirtualną Javy – JVM (ang. Java Virtual Machine), co zapewnia niezależność od systemu operacyjnego hosta. Statyczne typowanie oznacza, że typy zmiennych są weryfikowane na etapie kompilacji. Pozwala to wykryć znaczną część błędów jeszcze przed uruchomieniem aplikacji. Java dysponuje rozbudowanym zestawem bibliotek i frameworków przeznaczonych do budowy aplikacji webowych, obsługujących wielu użytkowników jednocześnie (Layka, 2015; Rychlicki-Kicior, 2010). Szczególne miejsce w tym zestawieniu zajmuje framework Spring, oferujący wsparcie dla budowy aplikacji internetowych – od warstwy dostępu do danych, przez logikę biznesową, po mechanizmy bezpieczeństwa (Walls, 2019).
+Python jest dynamicznie typowanym językiem interpretowanym, posiada czytelną składnię i niski próg wejścia. Typy zmiennych są w nim weryfikowane dopiero w czasie wykonania programu. Przyspiesza to pisanie kodu, jednak przenosi ryzyko wykrycia pewnych błędów na etap działania aplikacji. Python jest szeroko stosowany w analizie danych, uczeniu maszynowym oraz skryptowaniu, a do budowy aplikacji webowych wykorzystuje się frameworki takie jak Django i Flask (Matthes, 2019).
+C# również jest statycznie typowanym językiem opracowanym przez Microsoft. Podobnie jak Java, weryfikuje typy zmiennych na etapie kompilacji i posiada rozbudowany zbiór narzędzi. Jego zastosowanie w aplikacjach webowych opiera się przede wszystkim na frameworku ASP.NET Core. C# jest silnie powiązany z technologiami Microsoftu, co może utrudniać jego zastosowanie w środowiskach wykorzystujących różne technologie (Albahari i Albahari, 2022).
+Spring Boot stanowi rozszerzenie platformy Spring, ułatwiające tworzenie samodzielnych aplikacji internetowych oraz ograniczające ilość wymaganej konfiguracji (Walls, 2019). Framework wykorzystuje mechanizm automatycznej konfiguracji, dzięki któremu na podstawie zastosowanych zależności przygotowywana jest znaczna część konfiguracji aplikacji. Spring Boot umożliwia również uruchamianie aplikacji z wykorzystaniem wbudowanego kontenera servletów, dzięki czemu nie jest konieczne wdrażanie jej na zewnętrznym serwerze aplikacyjnym (Walls, 2019). Alternatywą dla Spring Boot jest Quarkus – framework przeznaczony między innymi do tworzenia aplikacji uruchamianych w środowiskach chmurowych i kontenerowych. Jego zaletami są krótki czas uruchamiania oraz niskie zużycie pamięci, szczególnie w przypadku aplikacji kompilowanych do natywnego pliku wykonywalnego (Quarkus, b.d.).
+W aplikacjach opartych na Spring Boot możliwe jest wykorzystanie różnych kontenerów servletów, w tym Apache Tomcat, Jetty oraz Undertow. W przypadku aplikacji wykorzystujących stos servletowy domyślnie stosowany jest Apache Tomcat, jednak może on zostać zastąpiony innym obsługiwanym rozwiązaniem poprzez odpowiednią zmianę zależności projektu (Spring Boot, 2024). Jetty wykorzystuje mechanizmy Java NIO umożliwiające obsługę dużej liczby połączeń przy wykorzystaniu niewielkiej liczby wątków (Eclipse Foundation, b.d.-b). Undertow jest natomiast serwerem internetowym dla języka Java wykorzystującym mechanizmy NIO oraz obsługującym zarówno blokujące, jak i nieblokujące operacje wejścia/wyjścia (Undertow, b.d.).
+Istotnym elementem warstwy logiki aplikacji są mechanizmy uwierzytelniania użytkowników. Jednym z tradycyjnych podejść są sesje serwerowe – po zalogowaniu serwer tworzy sesję identyfikowaną unikalnym znacznikiem przesyłanym do klienta i przechowuje jej stan po swojej stronie (Layka, 2015). Rozwiązanie to wymaga utrzymywania stanu sesji po stronie serwera, co może zwiększać złożoność zarządzania aplikacją wraz ze wzrostem liczby użytkowników. Innym podejściem jest wykorzystanie tokenów JWT (ang. JSON Web Token), stanowiących kompaktowy sposób przekazywania zestawu informacji w postaci obiektu JSON, który może zostać podpisany lub zaszyfrowany (Jones, Bradley i Sakimura, 2015). W przypadku zastosowania JWT w sposób bezstanowy informacje zawarte w tokenie są przekazywane wraz z kolejnymi żądaniami i weryfikowane przez serwer, bez konieczności przechowywania informacji o aktywnej sesji po jego stronie. Alternatywnym rozwiązaniem w ekosystemie Java jest Apache Shiro, czyli framework bezpieczeństwa zapewniający między innymi mechanizmy uwierzytelniania, autoryzacji i zarządzania sesjami. Może on być integrowany z aplikacjami opartymi na Spring, w tym z Spring Boot za pomocą odpowiednich zależności i konfiguracji (Apache Software Foundation, b.d.).
+Ważnym aspektem tworzenia aplikacji internetowych jest również zarządzanie zależnościami projektu oraz automatyzacja procesu jego budowania. W ekosystemie Java jednym z popularnych narzędzi wykorzystywanych w tym celu jest Maven. Na podstawie pliku konfiguracyjnego POM (ang. Project Object Model), zapisanego w formacie XML, zarządza on zależnościami oraz określa kolejne etapy budowania aplikacji, takie jak kompilacja, testowanie czy pakowanie (Walls, 2019). Alternatywnym rozwiązaniem jest Gradle, który wykorzystuje skrypty budowania i pozwala na elastyczne definiowanie procesu budowania oraz zarządzanie zależnościami projektu. W porównaniu z Mavenem oferuje większą swobodę konfiguracji procesu budowania (Muschko, 2014).
+Warstwa danych
+Ostatnią wymienioną warstwą jest warstwa danych. Do jej obowiązków należy przechowywanie oraz zarządzanie informacjami wykorzystywanymi przez aplikację. W praktyce realizowana jest przez system zarządzania bazą danych, który umożliwia między innymi operacje CRUD, a więc zapisywanie (Create), odczyt (Read), aktualizację (Update) oraz usuwanie (Delete) danych (Rychlicki-Kicior, 2010). Komunikacja pomiędzy warstwą danych a warstwą logiki odbywa się często z wykorzystaniem języka SQL (ang. Structured Query Language), który umożliwia wykonywanie zapytań służących do pobierania i modyfikowania danych (Rychlicki-Kicior, 2010).
+Komunikacja z relacyjną bazą danych może odbywać się bezpośrednio za pomocą interfejsu JDBC (ang. Java Database Connectivity), który umożliwia wykonywanie zapytań SQL oraz przetwarzanie ich wyników (Rychlicki-Kicior, 2010; Oracle, b.d.-a). Podejście to zapewnia bezpośrednią kontrolę nad wykonywanymi zapytaniami, wymaga jednak samodzielnego przetwarzania wyników i odwzorowywania ich na obiekty języka Java, co przy bardziej rozbudowanym modelu danych może zwiększać ilość kodu.
+Alternatywą dla bezpośredniego wykorzystania JDBC są rozwiązania ORM (ang. Object-Relational Mapping), które umożliwiają odwzorowanie obiektów aplikacji na struktury relacyjnej bazy danych. Pozwala to na pracę z danymi za pomocą obiektów języka Java i ogranicza konieczność bezpośredniego wykonywania części operacji przy użyciu SQL. Zasady mapowania obiektowo-relacyjnego w środowisku Java określa standard JPA (ang. Java Persistence API) (Rychlicki-Kicior, 2010).
+Hibernate jest rozwiązaniem ORM implementującym standard JPA. Umożliwia między innymi automatyczne mapowanie obiektów na struktury relacyjnej bazy danych, leniwe ładowanie danych oraz wykorzystanie mechanizmów pamięci podręcznej, dzięki czemu upraszcza pracę z danymi (Hibernate, b.d.). W projektach opartych na Spring Boot Hibernate może być wykorzystywany jako dostawca JPA i integrowany ze Spring Data JPA. Alternatywnym rozwiązaniem jest EclipseLink, które również implementuje standard JPA i zapewnia mechanizmy mapowania obiektowo-relacyjnego. Oferuje także dodatkowe możliwości konfiguracji oraz zarządzania sposobem przechowywania i pobierania danych (Eclipse Foundation, b.d.-a). Oba rozwiązania pozwalają korzystać ze standardu JPA, różniąc się między innymi sposobem realizacji dodatkowych funkcjonalności wykraczających poza jego podstawowy zakres.
+Moduł Spring Data upraszcza tworzenie warstwy dostępu do danych w aplikacjach wykorzystujących framework Spring. Pozwala ograniczyć ilość kodu potrzebnego do wykonywania podstawowych operacji na danych. Wykorzystuje w tym celu repozytoria definiowane jako interfejsy, dla których implementacja jest tworzona automatycznie, a zapytania mogą być wyprowadzane z nazw metod lub definiowane za pomocą odpowiednich adnotacji (Walls, 2019). 
+Spring Data JPA zapewnia dodatkową warstwę nad standardem i umożliwia tworzenie repozytoriów działających na encjach zarządzanych przez dostawcę JPA, takiego jak Hibernate. Oprócz tworzenia zapytań na podstawie nazw metod pozwala również definiować własne zapytania z wykorzystaniem JPQL oraz SQL. Dzięki temu upraszcza dostęp do danych i ogranicza ilość kodu potrzebnego do komunikacji z bazą danych. (Walls, 2019). 
+Spring Data JDBC jest alternatywą dla Spring Data JPA i wykorzystuje JDBC bez stosowania pełnego mechanizmu JPA. Zapewnia prostszy model odwzorowania obiektów na dane przechowywane w bazie oraz mechanizm repozytoriów. W porównaniu ze Spring Data JPA nie wykorzystuje między innymi mechanizmów leniwego ładowania i buforowania ani śledzenia zmian encji, dzięki czemu jego model działania jest prostszy (Spring Data, b.d.).
+Relacyjne i nierelacyjne bazy danych
+Bazy danych stanowią jeden z podstawowych elementów współczesnych aplikacji internetowych. Odpowiadają za przechowywanie, organizowanie i udostępnianie informacji wykorzystywanych przez system. W zależności od sposobu organizacji danych oraz wymagań aplikacji stosowane są różne modele baz danych, wśród których wyróżniamy rozwiązania relacyjne oraz nierelacyjne (Meier i Kaufmann, 2023).
+Relacyjne bazy danych stanowią jeden z najczęściej wykorzystywanych sposobów przechowywania informacji w aplikacjach internetowych. Model relacyjny opiera się organizacji danych w postaci tabel zbudowanych z wierszy oraz kolumn, pomiędzy którymi mogą występować konkretne relacje. Tabela taka przechowuje informacje na temat konkretnego typu obiektów, natomiast tabele powiązane są ze sobą za pomocą kluczy głównych oraz obcych. Komunikacja z taką bazą danych odbywa się zazwyczaj z użyciem języka SQL, który umożliwia wykonywanie operacji pobierania, zapisu, aktualizacji i usuwania danych. Relacyjne bazy danych charakteryzują się wysoką spójnością danych i przejrzyście określoną strukturą informacji. To sprawia, że są wykorzystywane w systemach wymagających uporządkowanego modelu danych i kontroli integralności informacji. Do popularnych przykładów systemów zarządzania relacyjnymi bazami danymi należą między innymi MySQL, PostgreSQL oraz Oracle (Rychlicki-Kicior, 2010; Meier i Kaufmann 2023).
+Nierelacyjne bazy danych określane są również jako NoSQL. Mogą stanowić alternatywę dla klasycznych systemów relacyjnych. W przeciwieństwie do modelu relacyjnego nie opierają się na sztywnej strukturze tabel i relacji. Umożliwiają przechowywanie danych w różnych formach, takich jak dokumenty, struktury klucz–wartość czy grafy. Rozwiązania te są projektowane z myślą o obsłudze dużych ilości danych oraz zapewnieniu wysokiej skalowalności. Bazy NoSQL dobrze sprawdzają się w przypadku danych niestrukturalnych lub często zmieniających swoją strukturę, ponieważ często nie wymagają sztywno określonego schematu danych. Przykładem systemu zarządzania nierelacyjnymi bazami danych jest MongoDB, które wykorzystuje model dokumentowy. Innym przykładem jest Redis, wykorzystujący model klucz–wartość, a także Neo4j, oparty na modelu grafowym (Meier i Kaufmann, 2023).
+Relacyjne i nierelacyjne bazy danych różnią się przede wszystkim sposobem organizacji i przechowywania informacji. Bazy relacyjne wykorzystują strukturę tabel oraz relacje pomiędzy nimi, natomiast rozwiązania NoSQL oferują bardziej elastyczne modele przechowywania danych. W praktyce wybór odpowiedniego rozwiązania zależy od charakteru projektowanego systemu, rodzaju przechowywanych danych oraz wymagań dotyczących ich spójności, wydajności i skalowalności (Meier i Kaufmann, 2023).
+Wzorce projektowe – model MVC
+Wzorce projektowe stanowią sprawdzone rozwiązania problemów pojawiających się w procesie projektowania systemów informatycznych. Ich celem jest uporządkowanie struktury aplikacji oraz określenie zasad współpracy pomiędzy jej komponentami. Dzięki ich zastosowaniu możliwe jest tworzenie bardziej przejrzystych oraz łatwiejszych w rozwoju i utrzymaniu systemów. W kontekście aplikacji internetowych szczególne znaczenie ma rozdzielenie odpowiedzialności pomiędzy poszczególne elementy systemu, co pozwala na wyraźne oddzielenie logiki przetwarzania danych od warstwy prezentacji (Layka, 2015; Rychlicki-Kicior, 2010).
+Jednym z najczęściej stosowanych wzorców w aplikacjach internetowych jest przedstawiony na rysunku 3. Wzorzec MVC, który zakłada podział systemu na trzy podstawowe komponenty: model, widok oraz kontroler. Taki podział obowiązków sprawia, że poszczególne komponenty systemu mogą być rozwijane i testowane niezależnie od siebie, co przekłada się na większą elastyczność oraz łatwość wprowadzania zmian w aplikacji.
+
+Rysunek 3. Schemat działania wzorca MVC
+Źródło: opracowanie własne na podstawie Layka (2015) oraz Rychlicki-Kicior (2010)
+Model odpowiada za zarządzanie danymi oraz realizację logiki aplikacji, w tym operacje związane z przetwarzaniem informacji i komunikacją z warstwą danych. Widok pełni funkcję prezentacyjną, umożliwiając wyświetlanie danych użytkownikowi w odpowiedniej formie. Kontroler natomiast odpowiada za obsługę żądań użytkownika oraz przekazywanie ich do dalszego przetwarzania, pełniąc rolę pośrednika pomiędzy widokiem a modelem (Layka, 2015).
+Proces działania wzorca MVC polega na przepływie informacji pomiędzy jego komponentami. Użytkownik wchodzi w interakcję z warstwą prezentacji, co prowadzi do wygenerowania żądania kierowanego do kontrolera. W aplikacjach internetowych kontroler jest zazwyczaj pierwszym elementem po stronie serwera, który odbiera zapytanie HTTP i inicjuje dalsze przetwarzanie. Następnie kontroler przekazuje żądanie do modelu, który realizuje odpowiednie operacje na danych. Po ich wykonaniu wynik wraca do kontrolera, który wybiera odpowiedni widok i przekazuje do niego dane w celu ich prezentacji użytkownikowi. Taki przepływ informacji jest charakterystyczny dla aplikacji działających w modelu klient–serwer (Rychlicki-Kicior, 2010).
+Środowisko uruchomieniowe i wdrażanie aplikacji
+Środowisko uruchomieniowe oraz sposób wdrażania aplikacji są istotnymi elementami procesu tworzenia systemów internetowych. Po zakończeniu implementacji aplikacja musi zostać uruchomiona w środowisku zapewniającym dostęp do wymaganych komponentów i zależności. Sposób przygotowania takiego środowiska może być różny. Jednym z podejść jest bezpośrednie zainstalowanie i skonfigurowanie wymaganych komponentów na serwerze, natomiast innym rozwiązaniem jest wykorzystanie konteneryzacji (Casteleyn i in., 2009; Chudzik, 2024).
+W tradycyjnym podejściu komponenty aplikacji, takie jak środowisko Java, aplikacja Spring Boot czy PostgreSQL, są instalowane i konfigurowane bezpośrednio na systemie operacyjnym serwera. Rozwiązanie to nie wymaga dodatkowej warstwy konteneryzacji, wiąże się jednak z koniecznością samodzielnego przygotowania i utrzymywania środowiska. Konfiguracja poszczególnych komponentów może również zależeć od konkretnego serwera, co może utrudniać odtworzenie takiego środowiska na innej maszynie (Casteleyn i in., 2009).
+Alternatywnym podejściem jest konteneryzacja, czyli umieszczanie aplikacji wraz z jej zależnościami w odizolowanych kontenerach. W przeciwieństwie do maszyn wirtualnych kontenery współdzielą jądro systemu operacyjnego hosta, dzięki czemu mogą wymagać mniej zasobów oraz uruchamiać się szybciej. Zastosowanie konteneryzacji ułatwia również przenoszenie aplikacji pomiędzy różnymi środowiskami i pozwala zachować większą powtarzalność ich konfiguracji (Chudzik, 2024).
+Jednym z rozwiązań wykorzystywanych do tworzenia i uruchamiania kontenerów jest Docker. Definicja środowiska uruchomieniowego może zostać zapisana w pliku Dockerfile, na podstawie którego tworzony jest obraz zawierający aplikację oraz wymagane zależności. Uruchomiona instancja obrazu jest nazywana kontenerem. Obrazy mogą być również przechowywane i udostępniane za pośrednictwem repozytoriów, takich jak Docker Hub (Chudzik, 2024).
+W przypadku aplikacji składających się z kilku współpracujących ze sobą usług pomocnym narzędziem jest Docker Compose. Pozwala on zdefiniować w jednym pliku w formacie YAML poszczególne usługi wraz z ich konfiguracją i zależnościami. Dzięki temu możliwe jest wspólne uruchamianie i zatrzymywanie wielu kontenerów, co upraszcza przygotowanie środowiska całego systemu (Chudzik, 2024).
+Alternatywnym rozwiązaniem dla Dockera jest Podman, który również umożliwia tworzenie i uruchamianie kontenerów. Jedną z jego cech jest możliwość działania bez centralnego procesu działającego w tle, a także uruchamiania kontenerów bez uprawnień administratora (Podman Documentation, 2019).
+Praktyczne podejście do aplikacji
+Na podstawie analizy istniejących rozwiązań przedstawionej w podrozdziale 1.2.5 stwierdzono, że część dostępnych aplikacji posiada ograniczenia funkcjonalne związane z organizacją oraz zarządzaniem wyprawami grupowymi. Jednocześnie zauważono, że niektóre rozwiązania oferują funkcjonalności nadmiernie rozbudowane w stosunku do potrzeb użytkowników planujących aktywności górskie. W związku z tym podjęto decyzję o zaprojektowaniu własnego rozwiązania, mającego na celu połączenie najważniejszych funkcji organizacyjnych i społecznościowych w ramach jednego systemu.
+Założenia i cele projektu
+ Opis aplikacji
+Aplikacja internetowa przeznaczona jest dla osób zainteresowanych górskimi wędrówkami, które chcą być organizatorami lub uczestnikami wspólnych wypraw. System ma stanowić środowisko w przestrzeni cyfrowej, w której użytkownicy dzielący zamiłowanie do gór będę mogli planować wyjazdy, udostępniać je innym oraz działać razem w kwestii ich organizacji.
+Głównym założeniem jest połączenie funkcji wykorzystywanych w istniejących już narzędziach do aktywności terenowych z elementami charakterystycznymi dla platform społecznościowych. Aplikacja ma umożliwiać nie tylko sprawne zaplanowanie wyprawy i zarządzanie nią oraz użytkownikami, ale również budowanie społeczności opartej na wspólnym zainteresowaniu turystyką górską. Ma być ona odpowiedzią na potrzebę istnienia miejsca, które łączyć będzie aspekt organizacyjny wypraw z aspektem społecznym (Wellman, 2001; Hwang & Foote, 2021).
+Rozwiązanie ma być skierowane dla szerokiego grona odbiorców – zarówno dla początkujących turystów, którzy szukają osób preferujących lżejsze trasy lub gotowych podzielić się swoją wiedzą, jak i dla doświadczonych wędrowców, którzy poszukują partnerów do wspólnego pokonywania wyzwań. Publiczna dostępność wydarzeń ma sprzyjać tworzeniu się i rozrastaniu społeczności oraz obniżać próg wejścia dla nowych użytkowników.
+Wymagania funkcjonalne i niefunkcjonalne
+Analiza wymagań jest podstawowym elementem procesu projektowania aplikacji internetowej. Wymagania funkcjonalne określają konkretne operacje i działania, które mają być realizowane przez system z punktu widzenia użytkownika. W tabeli 2 przedstawiono wymagania funkcjonalne zidentyfikowane na etapie analizy projektowanej aplikacji. Wymaganiom nadany został priorytet: wysoki, średni lub niski odzwierciedlający ich znaczenie dla odpowiedniego działania systemu.
+Tabela 2. Wymagania funkcjonalne
+ID
+Wymaganie
+Opis
+Priorytet
+1
+Rejestracja i logowanie
+System ma umożliwiać tworzenie konta użytkownika oraz logowanie za pomocą adresu e-mail i hasła.
+Wysoki
+2
+Zarządzanie profilem
+Użytkownik musi mieć możliwość edycji danych profilowych, w tym informacji o poziomie doświadczenia i preferencjach turystycznych
+Wysoki
+3
+Tworzenie i edycja wypraw
+Użytkownik ma mieć możliwość tworzenia i edytowania wypraw górskich oraz możliwość konfigurowania ich parametrów
+Wysoki
+4
+Informacje o wyprawie
+System ma umożliwiać określenie terminu, lokalizacji oraz opisu wydarzenia
+Wysoki
+5
+Dołączanie do wypraw
+Użytkownik ma mieć możliwość zgłoszenia chęci udziału w wyprawie i potwierdzenia uczestnictwa po akceptacji organizatora, jeśli konfiguracja wyprawy tego wymaga.
+Wysoki
+6
+Zarządzanie uczestnikami
+Organizator ma mieć możliwość akceptowania i odrzucania zgłoszeń oraz zarządzania listą uczestników.
+Wysoki
+7
+Przypisywanie ról
+System ma obsługiwać role organizacyjne – organizatora, logistyka, nawigatora i uczestnika – z odpowiednio zróżnicowanymi uprawnieniami.
+Wysoki
+8
+Import tras GPX
+Aplikacja ma umożliwiać import tras z plików w formacie GPX.
+Wysoki
+9
+Wymagane wyposażenie
+Organizator i nawigator mają mieć możliwość dodania listy wymaganego i zalecanego wyposażenia do wyprawy.
+Średni
+10
+Logistyka wyprawy
+System ma umożliwiać organizację elementów logistycznych wyprawy, takich jak transport i noclegi.
+Wysoki
+11
+Komunikacja uczestników
+Uczestnicy mają mieć możliwość wymiany wiadomości w obrębie wyprawy, grupy oraz prywatnych wiadomości.
+Średni
+12
+Udostępnianie wypraw
+Wyprawy i trasy mają być widoczne publicznie dla użytkowników platformy, jeśli ich widoczność nie została ograniczona podczas konfiguracji wydarzenia.
+Wysoki
+13
+Historia wypraw
+System ma umożliwiać przeglądanie historii zrealizowanych wypraw przez użytkownika.
+Niski
+14
+Statusy wyprawy
+Każda wyprawa ma posiadać jeden z pięciu statusów: zaplanowana, w trakcie, zakończona, odwołana, niezrealizowana.
+Wysoki
+15
+Wyszukiwanie
+System ma umożliwiać wyszukiwanie wypraw oraz użytkowników według określonych kryteriów.
+Wysoki
+16
+Filtrowanie i sortowanie wypraw
+Aplikacja ma pozwalać na filtrowanie oraz sortowanie wypraw za pomocą kryteriów wybranych przez użytkownika.
+Wysoki
+17
+Obsługa map
+Aplikacja ma obsługiwać wyświetlanie map i lokalizacji tras wypraw.
+Średni
+Źródło: Opracowanie własne.
+
+Wymagania niefunkcjonalne natomiast dotyczą jakości, a więc takich aspektów jak bezpieczeństwo, wydajność czy dostępność. Lista wymagań określających jakościowe właściwości systemu została przedstawiona w tabeli 3. Tak jak w przypadku wymagań funkcjonalnych, każdemu z nich został nadamy priorytet.
+
+Tabela 3. Wymagania niefunkcjonalne
+ID
+Wymaganie
+Opis
+Priorytet
+1
+Bezpieczeństwo danych
+System ma zapewniać ochronę danych użytkowników, w tym szyfrowanie haseł.
+Wysoki
+2
+Wydajność
+Aplikacja ma sprawnie obsługiwać wielu użytkowników jednocześnie bez widocznego spadku wydajności.
+Wysoki
+3
+Responsywność
+Interfejs ma być dostosowany do wyświetlania na urządzeniach mobilnych, tabletach i komputerach stacjonarnych.
+Wysoki
+4
+Intuicyjność interfejsu
+Interfejs ma być czytelny i intuicyjny, umożliwiający sprawne korzystanie z aplikacji bez wcześniejszego przeszkolenia.
+Średni
+5
+Rozszerzalność
+System ma być zaprojektowany w sposób umożliwiający dodawanie nowych funkcjonalności bez konieczności przebudowy istniejących komponentów.
+Średni
+6
+Stabilność
+Aplikacja ma działać w sposób stabilny, minimalizując ryzyko wystąpienia błędów w trakcie użytkowania.
+Wysoki
+7
+Komunikacja frontend-backend
+System ma zapewniać poprawną i niezawodną komunikację pomiędzy warstwą prezentacji a warstwą logiki biznesowej.
+Wysoki
+8
+Integralność danych
+System ma zapewniać integralność danych przechowywanych w bazie, w tym spójność relacji pomiędzy encjami.
+Wysoki
+9
+Skalowalność
+Architektura systemu ma umożliwiać obsługę rosnącej liczby użytkowników i danych wraz z rozwojem platformy.
+Średni
+10
+Kompatybilność
+Aplikacja ma działać poprawnie w popularnych przeglądarkach internetowych
+Wysoki
+11
+Utrzymywalność kodu
+Kod aplikacji ma być czytelny i łatwy w utrzymaniu dzięki zastosowaniu architektury warstwowej oraz wzorców projektowych
+Średni
+Źródło: Opracowanie własne.
+Jak podkreśla Martin (2022), prawidłowe rozgraniczenie tych dwóch kategorii jest kluczowe dla utrzymania klarownej struktury oraz uniknięcia sytuacji, w której wymagania jakościowe spychane są na drugi plan na rzecz funkcjonalności. Takie zaniedbanie prowadzi do skomplikowanej architektury oraz trudnego do utrzymania kodu. Spełnienie obu rodzajów wymagań jest warunkiem koniecznym do dostarczenia użytecznego i godnego zaufania narzędzia.
+Architektura systemu
+Projektowana aplikacja została oparta na architekturze klient-serwer z podziałem na trzy warstwy: prezentacji, logiki aplikacji oraz danych. Warstwa prezentacji realizowana jest przez aplikację frontendową działającą w przeglądarce internetowej użytkownika. Warstwa logiki aplikacji została zaimplementowana po stronie serwera i udostępnia interfejs REST API, za pośrednictwem którego odbywa się komunikacja pomiędzy klientem a systemem. Warstwa danych wykorzystuje relacyjną bazę danych zarządzaną przez system PostgreSQL. Komunikacja pomiędzy warstwą logiki a bazą danych realizowana jest z wykorzystaniem mechanizmu Spring Data JPA, pełniącego rolę warstwy pośredniczącej pomiędzy aplikacją a systemem zarządzania bazą danych. Takie rozdzielenie odpowiedzialności zwiększa przejrzystość architektury, ułatwia utrzymanie systemu oraz umożliwia jego dalszy rozwój i rozbudowę.
+Diagramy przepływu danych
+Diagram kontekstowy przedstawiony na rysunku 4. wskazuje granice projektowanego rozwiązania. Głównym aktorem systemu jest użytkownik korzystający z aplikacji za pośrednictwem przeglądarki internetowej. W ramach komunikacji przekazuje on dane związane z rejestracją i logowaniem, organizacją wypraw, zarządzaniem uczestnikami, transportem, wyposażeniem oraz plikami GPX. W odpowiedzi udostępniane są informacje dotyczące wypraw, ich lokalizacji, uczestników, powiadomień, a także listę znajomych i grup użytkowników. 
+Rysunek 4. Diagram przepływu danych poziomu 0 (kontekstowy)
+Źródło: opracowanie własne
+System nie integruje się bezpośrednio z oficjalnymi interfejsami API Google Maps ani Booking.com. Zamiast tego wykorzystuje mechanizm oparty na obsłudze przekierowań HTTP odnośników udostępnianych przez oba serwisy. Google Maps może być wykorzystywany zarówno przy określaniu miejsca zbiórki, jak i lokalizacji noclegu, natomiast Booking.com – wyłącznie przy określaniu noclegu. W przypadku Google Maps użytkownik podaje skrócony odnośnik wygenerowany w domenie maps.app.goo.gl. Aplikacja wysyła żądanie HTTP do wskazanego adresu, odczytuje wartość nagłówka Location z odpowiedzi przekierowującej, a następnie powtarza ten proces dla kolejnych adresów, aż do uzyskania końcowego adresu URL zawierającego informacje o miejscu. W przypadku Booking.com, jeżeli podany odnośnik nie zawiera jeszcze pełnego adresu oferty, wykonywane jest pojedyncze przekierowanie w celu jego uzyskania. Nazwa obiektu noclegowego jest następnie odczytywana ze struktury końcowego adresu URL.
+Zastosowane podejście pozwala uniknąć bezpośredniej integracji z zewnętrznymi interfejsami API i związanych z nią wymagań konfiguracyjnych. Przykładowo, korzystanie z Google Places API wymaga utworzenia projektu, włączenia odpowiedniej usługi oraz skonfigurowania uwierzytelniania i rozliczeń; do uwierzytelniania można wykorzystać między innymi klucz API (Google for Developers, b.d.-b). W przypadku Booking.com dostęp do Connectivity APIs jest przeznaczony dla partnerów korzystających z programu Connectivity Partners, którzy muszą spełnić określone wymagania przed rozpoczęciem integracji (Booking.com, b.d.). Dodatkową zaletą przyjętego rozwiązania jest możliwość wykorzystania odnośników, którymi użytkownicy już dysponują. Wadą pozostaje natomiast zależność od struktury adresów URL oraz sposobu działania przekierowań stosowanych przez zewnętrzne serwisy. Ich zmiana może wymagać dostosowania mechanizmu przetwarzania adresów w aplikacji.
+Dodatkowo system wykorzystuje dane geograficzne pochodzące z bazy GeoNames, udostępnianej na licencji Creative Commons Attribution 4.0 (GeoNames, b.d.). Zagadnienie to zostało szerzej omówione w podrozdziale 1.1.2. Dane obejmują między innymi informacje o szczytach, przełęczach i jeziorach i zostały zaimportowane do systemu przed jego uruchomieniem. Ze względu na niewystarczające pokrycie schronisk górskich w polskich górach w wykorzystywanym zbiorze GeoNames, dane dotyczące schronisk pozyskano dodatkowo z OpenStreetMap za pomocą interfejsu Overpass API (OpenStreetMap Foundation, b.d.; OpenStreetMap Wiki, b.d.). Następnie dane te zostały połączone z pozostałymi informacjami geograficznymi w ramach jednej tabeli. Dzięki temu aplikacja może korzystać z tych danych podczas planowania i organizacji wypraw bez konieczności pobierania ich z zewnętrznych źródeł w trakcie działania systemu.
+Diagram przepływu danych poziomu 1 (zob. rysunek 5.) przedstawia sposób przetwarzania informacji w systemie oraz zależności pomiędzy użytkownikami, procesami i magazynami danych. W celu zwiększenia przejrzystości rozwiązania system został podzielony na sześć głównych procesów odpowiadających kluczowym obszarom funkcjonalnym aplikacji.
+Rysunek 5. Diagram przepływu danych poziomu 1
+Źródło: opracowanie własne
+Proces 1. odpowiada za zarządzanie użytkownikami: rejestrację, logowanie oraz obsługę profili. Proces numer 2 realizuje tworzenie i zarządzanie wyprawami, przechowując informacje o wydarzeniach, uczestnikach oraz harmonogramie. 3. proces zajmuje się analizą plików GPX, obliczaniem statystyk tras oraz identyfikacją obiektów geograficznych z wykorzystaniem lokalnej bazy GeoNames. Proces 4. wspiera organizację transportu i noclegów, współpracując między innymi z serwisami Google Maps i Booking. Proces 5. odpowiada za monitorowanie terminów wypraw, aktualizację ich statusów oraz generowanie powiadomień dla użytkowników. Ostatni proces – 6. realizuje funkcjonalności społecznościowe związane z zarządzaniem znajomymi, grupami oraz komunikacją pomiędzy użytkownikami. Zastosowany podział funkcjonalny pozwala na rozdzielenie odpowiedzialności pomiędzy poszczególne moduły systemu, zwiększając przejrzystość architektury oraz ułatwiając dalszy rozwój aplikacji.
+Model danych systemu
+Model danych systemu, przedstawiony w postaci diagramu ERD (zob. rysunek 6.), obejmuje szereg powiązanych tabel pogrupowanych w pięć głównych obszarów funkcjonalnych. Pierwszym z nich jest obszar użytkowników, oparty na tabeli przechowującej dane kont oraz informacje wykorzystywane podczas uwierzytelniania. Drugim obszarem są wyprawy, które stanowią centralny element modelu danych. Obejmuje on tabele przechowujące informacje o wyprawach i ich dniach, statystykach tras GPX, rozpoznanych lokalizacjach geograficznych, uczestnikach wraz z przypisanymi rolami, komentarzach, wymaganym wyposażeniu oraz dzienniku zmian. Trzeci obszar dotyczy organizacji transportu i noclegów, wykorzystując dwupoziomową strukturę sekcji i opcji umożliwiającą obsługę przejazdów oraz miejsc zakwaterowania. Czwarty obszar obejmuje funkcjonalności społecznościowe, takie jak relacje pomiędzy użytkownikami, grupy oraz komunikację grupową. Piąty obszar tworzy system powiadomień odpowiedzialny za przechowywanie komunikatów kierowanych do użytkowników. Uzupełnieniem modelu jest tabela geonames_features, zawierająca dane geograficzne zaimportowane z bazy GeoNames oraz uzupełnione o dane dotyczące schronisk pozyskane z OpenStreetMap, wykorzystywane podczas analizy tras oraz identyfikacji obiektów znajdujących się w ich pobliżu.
+Rysunek 6. Schemat relacyjnej bazy danych systemu – diagram ERD
+Źródło: opracowanie własne
+Przedstawiona architektura systemu została opracowana w oparciu o wymagania określone na etapie analizy. Zastosowanie architektury warstwowej, bezstanowego mechanizmu uwierzytelniania opartego na tokenach JWT oraz relacyjnej struktury bazy danych pozwala zapewnić spójność, bezpieczeństwo i możliwość dalszego rozwoju systemu. Opracowane diagramy oraz model danych przedstawiają sposób organizacji poszczególnych komponentów aplikacji i przepływu informacji pomiędzy nimi. Stanowią one podstawę do implementacji zaprojektowanego rozwiązania.
+Wykorzystane technologie
+GPX
+GPX został wybrany jako podstawowy format danych tras, ponieważ jest przeznaczony do przechowywania i wymiany danych dotyczących śladów GPS oraz jest obsługiwany przez wiele urządzeń i aplikacji turystycznych. Dzięki temu użytkownik może importować gotowe trasy bez konieczności ich wcześniejszej konwersji. GeoJSON i KML również umożliwiają przechowywanie danych geograficznych, jednak nie były potrzebne do realizacji przyjętego sposobu importowania i analizy tras.
+GeoNames i OpenStreetMap
+W projekcie wykorzystano GeoNames jako podstawowe źródło danych geograficznych oraz OpenStreetMap jako ich uzupełnienie. Dane z GeoNames umożliwiają lokalne przechowywanie informacji o obiektach znajdujących się w pobliżu tras, natomiast OpenStreetMap zostało wykorzystane przede wszystkim do uzupełnienia zbioru o schroniska górskie. Natural Earth nie zostało wykorzystane ze względu na ograniczoną szczegółowość danych w zakresie potrzebnym do identyfikacji konkretnych obiektów terenowych.
+React
+Do budowy interfejsu użytkownika zastosowano React, który pozwala na tworzenie aplikacji z wykorzystaniem niezależnych komponentów oraz umożliwia łatwe rozszerzanie projektu o dodatkowe biblioteki. Takie podejście było przydatne między innymi przy integracji biblioteki React Leaflet wykorzystywanej do obsługi map.
+Leaflet
+Za prezentację map i danych geograficznych odpowiada Leaflet, który umożliwia wyświetlanie tras, punktów oraz innych obiektów przestrzennych potrzebnych w aplikacji. Dodatkowym argumentem był jego otwartoźródłowy charakter oraz możliwość łatwej integracji z React za pomocą React Leaflet.
+Tailwind CSS
+Do stylowania interfejsu wykorzystano Tailwind CSS, ponieważ wykorzystanie gotowych klas użytkowych pozwala sprawnie tworzyć i modyfikować wygląd poszczególnych elementów bez konieczności tworzenia dużej liczby własnych styli.
+Java
+Warstwa serwerowa została zaimplementowana w języku Java, który zapewnia statyczne typowanie, rozbudowany ekosystem oraz dostęp do narzędzi przeznaczonych do tworzenia aplikacji internetowych. Ważnym argumentem była również możliwość wykorzystania Spring Boot i integracji z pozostałymi technologiami zastosowanymi w projekcie.
+Spring Boot
+Do budowy warstwy backendowej wykorzystano Spring Boot, ponieważ upraszcza konfigurację aplikacji i zapewnia mechanizmy potrzebne do obsługi REST API, bezpieczeństwa oraz dostępu do danych. Umożliwia również łatwą integrację z Hibernate, Spring Data JPA i pozostałymi elementami stosu technologicznego.
+Apache Tomcat
+Aplikację uruchomiono z wykorzystaniem Apache Tomcat, który jest domyślnym kontenerem servletów stosowanym przez Spring Boot. Dzięki temu nie było potrzeby instalowania ani dodatkowego konfigurowania zewnętrznego serwera.
+JWT
+Do obsługi uwierzytelniania użytkowników zastosowano JWT, ponieważ umożliwia bezstanową obsługę uwierzytelniania i dobrze pasuje do komunikacji pomiędzy frontendem a backendem za pośrednictwem REST API.
+Maven
+Za zarządzanie zależnościami oraz proces budowania aplikacji odpowiada Maven. Narzędzie pozwala uporządkować konfigurację projektu i automatyzować kolejne etapy budowania, takie jak kompilacja, testowanie i pakowanie aplikacji. Jego możliwości były wystarczające dla potrzeb projektu.
+Hibernate i Spring Data JPA
+Do obsługi warstwy dostępu do danych wykorzystano Hibernate w połączeniu ze Spring Data JPA, co pozwala na pracę z encjami i repozytoriami oraz ogranicza ilość kodu potrzebnego do bezpośredniej komunikacji z bazą danych. Rozwiązanie to pozwala również definiować własne zapytania w przypadkach wymagających bardziej złożonego przetwarzania, niedostępnego za pomocą standardowych zapytań wyprowadzanych z nazw metod. Zastosowanie tych rozwiązań dobrze odpowiada również rozbudowanemu modelowi danych aplikacji, obejmującemu liczne powiązania pomiędzy encjami.
+PostgreSQL
+Dane aplikacji są przechowywane w PostgreSQL, ponieważ relacyjny model dobrze odpowiada licznym zależnościom pomiędzy użytkownikami, wyprawami, dniami wypraw i pozostałymi elementami systemu. Dodatkowym argumentem była możliwość wykonywania operacji na współrzędnych geograficznych wykorzystywanych podczas analizy tras GPX.
+Docker i Docker Compose
+Środowisko aplikacji przygotowano z wykorzystaniem Dockera i Docker Compose, co ułatwia jego odtwarzanie oraz uruchamianie poszczególnych komponentów systemu. Docker Compose pozwala zdefiniować konfigurację backendu i bazy danych w jednym pliku, dzięki czemu mogą być uruchamiane jako jedno środowisko.
+Implementacja aplikacji
+Konfiguracja środowiska (Spring Boot, Maven)
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque non lectus justo. Curabitur hendrerit tortor ut nibh ornare auctor. Suspendisse at ex ullamcorper, ultricies nunc eu, sodales lectus. Suspendisse malesuada, augue et rutrum suscipit, quam ante convallis dolor, vel consectetur massa arcu vel neque.
+Modele danych i mapowanie bazy danych
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque non lectus justo. Curabitur hendrerit tortor ut nibh ornare auctor. Suspendisse at ex ullamcorper, ultricies nunc eu, sodales lectus. Suspendisse malesuada, augue et rutrum suscipit, quam ante convallis dolor, vel consectetur massa arcu vel neque.
+Logika biznesowa
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque non lectus justo. Curabitur hendrerit tortor ut nibh ornare auctor. Suspendisse at ex ullamcorper, ultricies nunc eu, sodales lectus. Suspendisse malesuada, augue et rutrum suscipit, quam ante convallis dolor, vel consectetur massa arcu vel neque.
+REST API
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque non lectus justo. Curabitur hendrerit tortor ut nibh ornare auctor. Suspendisse at ex ullamcorper, ultricies nunc eu, sodales lectus. Suspendisse malesuada, augue et rutrum suscipit, quam ante convallis dolor, vel consectetur massa arcu vel neque.
+Warstwa frontendowa
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque non lectus justo. Curabitur hendrerit tortor ut nibh ornare auctor. Suspendisse at ex ullamcorper, ultricies nunc eu, sodales lectus. Suspendisse malesuada, augue et rutrum suscipit, quam ante convallis dolor, vel consectetur massa arcu vel neque.
+Scenariusze użytkowe
+Zakończenie
+Literatura
+Bibliografia
+Pozycje zwarte i artykuły naukowe
+Abraham, M. (2006). Motywacja i osobowość. Wydawnictwo Naukowe PWN, Warszawa.
+Belbin, R. M. (2008). Twoja rola w zespole (A. Sawicka-Chrapkowicz, Tłum.). Gdańskie Wydawnictwo Psychologiczne.
+Brown, R. (2006). Procesy grupowe: dynamika wewnątrzgrupowa i międzygrupowa (J. Suchecki, Tłum.). Gdańskie Wydawnictwo Psychologiczne.
+Casteleyn, S., Daniel, F., Dolog, P., & Matera, M. (2009). Engineering web applications (Vol. 30). Heidelberg: Springer.
+Chudzik, P. (2024). Konteneryzacja z wykorzystaniem Dockera: podstawy. Helion.
+Czerwiński, K. (2020). Andrzej Postawa, Medialne (r) ewolucje a komunikowanie społeczne. Wydawnictwo Adam Marszałek, Toruń 2020, s. 421. Filozofia Edukacji, 2(1), 184-189.
+Dębski, M., Bigaj, M. (2019). Młodzi cyfrowi: nowe technologie: relacje, dobrostan. Gdańskie Wydawnictwo Psychologiczne.
+Flanagan, D. (2021). JavaScript: przewodnik: poznaj język mistrzów programowania (A. Watrak, Tłum.). Helion.
+Freeman, A. (2022). Pro Angular: Build powerful and dynamic web apps. Berkeley, CA, USA: Apress.
+Grotowska-Leder, J. (Red.). (2014). Więzi społeczne, sieci społeczne w perspektywie procesów inkluzji i wykluczenia społecznego. Wydawnictwo Uniwersytetu Łódzkiego.
+Grzeganek-Więcek, B. (2011). Wieloaspektowe zarządzanie organizacjami turystycznymi i sportowymi. Wydawnictwo Akademii Wychowania Fizycznego im. Jerzego Kukuczki.
+Hwang, S., & Foote, J. D. (2021). Why do people participate in small online communities?. Proceedings of the ACM on Human-Computer Interaction, 5(CSCW2), 1-25.
+Iacovella, S. (2017). GeoServer Beginner's Guide: Share Geospatial Data Using Open Source Standards. Packt Publishing Ltd.
+Jakobus, B., & Marah, J. (2018). Mastering Bootstrap 4: Master the latest version of Bootstrap 4 to build highly customized responsive web apps. Packt Publishing Ltd.
+Jakubowska, H., Nosal, P. (2017). Socjologia sportu. Wydawnictwo Naukowe PWN.
+Kamola, M., Arabas, P. P. (2018). Sieci społeczne i technologiczne: jak zrozumieć, jak wykorzystać (1. wyd.). Wydawnictwo Naukowe PWN.
+Kortas, M. (2022). Tailwind CSS : projektowanie stron www i podejście utility-first. Helion.
+Layka, V. (2015). Java: projektowanie aplikacji WWW (L. Lachowski, Tłum.). Helion.
+Mandelli, G., Angriman, A. (2019). Scales of difficulty in climbing. Retrieved, 22, 2019.
+Martin, R. C. (2022). Czysta architektura: struktura i design oprogramowania: przewodnik dla profesjonalistów (W. Moch, Tłum.). Helion.
+Meier, A., & Kaufmann, M. (2023). SQL and NoSQL databases: Modeling, languages, security and architectures for big data management (2nd ed.). Springer.
+Muschko, B. (2014). Gradle in action. Simon and Schuster.
+Nudo, J., Cinelli, M., Baronchelli, A., Quattrociocchi, W. (2025). From Niche to Mainstream: Community Size and Engagement in Social Media Conversations. arXiv preprint arXiv:2501.12076.
+Putnam, R. D. (2008). Samotna gra w kręgle: upadek i odrodzenie wspólnot lokalnych w Stanach Zjednoczonych. Wydawnictwa Akademickie i Profesjonalne.
+Rychlicki-Kicior, K. (2010). Java EE 6: programowanie aplikacji www. Wydawnictwo Helion.
+Smiljanić, J., Mitrović Dankulov, M. (2017). Associative nature of event participation dynamics: A network theory approach. PloS one, 12(2), e0171565.
+Soler, U. (2018). Technologia jako narzędzie wzmacniania więzi społecznych?. Zeszyty Naukowe. Organizacja i Zarządzanie/Politechnika Śląska.
+Stefanov, S. (2021). React: up & running: building web applications. " O'Reilly Media, Inc.".
+Strugarek, J. (2006). Organizacja i prowadzenie imprez sportowych, rekreacyjnych i turystycznych. Wydawnictwo Naukowe Uniwersytetu im. Adama Mickiewicza.
+Szmatka, J. (2015). Małe struktury społeczne: wstęp do mikrosocjologii strukturalnej. Wydawnictwo Naukowe PWN.
+Walls, C. (2019). Spring w Akcji. Wydanie V. Helion.
+Wellman, B. (2001). Computer networks as social networks. Science, 293(5537), 2031-2034.
+Wojciszke, B., Grzyb, T. (2024). Psychologia społeczna. Wydanie drugie zaktualizowane. Wydawnictwo Naukowe Scholar.
+Netografia
+Apache Software Foundation. (b.d.). Apache Shiro Documentation. Pobrane z https://shiro.apache.org/documentation.html (dostęp: 28.08.2026).
+Booking.com. (b.d.). Connectivity APIs – Booking.com for Developers. Pobrane z https://developers.booking.com/connectivity/docs (dostęp: 10.09.2026).
+Eclipse Foundation. (b.d.-a). EclipseLink Documentation. Pobrane z https://www.eclipse.org/eclipselink/documentation/ (dostęp: 05.09.2026).
+Eclipse Foundation. (b.d.-b). Jetty Documentation. Pobrane z https://jetty.org/docs/ (dostęp: 28.08.2026).
+GeoNames. (b.d.). GeoNames geographical database. Pobrane z https://www.geonames.org/ (dostęp: 26.08.2026).
+Google for Developers. (b.d.-a). Google Maps Platform Pricing. Pobrane z https://developers.google.com/maps/billing-and-pricing/pricing (dostęp: 06.09.2026).
+Google for Developers. (b.d.-b). Maps JavaScript API Overview. Pobrane z https://developers.google.com/maps/documentation/javascript/overview (dostęp: 06.09.2026).
+Google for Developers. (b.d.-c). Set up the Places API (New). Pobrane z https://developers.google.com/maps/documentation/places/web-service/get-api-key (dostęp: 10.09.2026).
+Hibernate. (b.d.). Hibernate ORM Documentation. Pobrane z https://hibernate.org/orm/documentation/ (dostęp: 05.09.2026).
+Jakarta Persistence. (2024). Jakarta Persistence 3.2 Specification. Eclipse Foundation. Pobrane z https://jakarta.ee/specifications/persistence/3.2/ (dostęp: 05.09.2026).
+Jones, M., Bradley, J., Sakimura, N. (2015). JSON Web Token (JWT). RFC 7519. Internet Engineering Task Force. Pobrane z https://www.rfc-editor.org/rfc/rfc7519 (dostęp: 28.08.2026).
+Naszemiasto Zakopane. (2025). Oto 10 najbardziej zatłoczonych szlaków w Tatrach. Znamy statystyki – w sumie ponad 5,2 mln turystów w 2025 roku. Pobrane z https://zakopane.naszemiasto.pl/oto-10-najbardziej-zatloczonych-szlakow-w-tatrach-znamy-statystki-w-sumie-ponad-5-2-mln-turystow-w-2025-roku/ar/c1p2-28670543 (dostęp: 20.01.2026).
+Natural Earth. (b.d.). About - Free vector and raster map data at 1:10m, 1:50m, and 1:110m scales. Pobrane z https://www.naturalearthdata.com/about/ (dostęp: 26.08.2026).
+OpenStreetMap Foundation. (b.d.). About OpenStreetMap. Pobrane z https://www.openstreetmap.org/about (dostęp: 26.08.2026).
+OpenStreetMap Wiki. (b.d.). Overpass API. Pobrane z https://wiki.openstreetmap.org/wiki/Overpass_API (dostęp: 10.09.2026).
+Oracle. (b.d.-a). Lesson: JDBC Introduction Pobrane z https://docs.oracle.com/javase/tutorial/jdbc/overview/index.html (dostęp: 05.09.2026).
+Oracle. (b.d.-b). Java NIO. Java Platform, Standard Edition Documentation. Pobrane z https://docs.oracle.com/en/java/javase/21/core/java-nio.html (dostęp: 28.08.2026).
+Podman. (2019). What is Podman? – Podman Documentation. Pobrane z https://docs.podman.io/ (dostęp: 10.09.2026). (alfabetycznie: między „Oracle” a „Quarkus”)
+Quarkus. (b.d.). Quarkus Documentation. Pobrane z https://quarkus.io/guides/ (dostęp: 28.08.2026).
+Spring Boot. (2024). Spring Boot Reference Documentation 3.2. Pobrane z https://docs.spring.io/spring-boot/docs/3.2.x/reference/html/ (dostęp: 28.08.2026).
+Spring Data. (b.d.). JDBC. Pobrane z: https://docs.spring.io/spring-data/relational/reference/jdbc.html (dostęp: 05.09.2026).
+TopoGrafix. (2004). GPX 1.1 Schema Documentation. Pobrane z http://www.topografix.com/GPX/1/1/ (dostęp: 26.08.2026).
+Undertow. (b.d.). Undertow Documentation. Pobrane z https://undertow.io/documentation.html (dostęp: 28.08.2026).
+W3C. (2008). Extensible Markup Language (XML) 1.0 (Fifth Edition). Pobrane z https://www.w3.org/TR/xml/ (dostęp: 26.08.2026).
+Strony aplikacji
+AllTrails, (b.d.). https://www.alltrails.com (dostęp 06.05.2026).
+Hiiker, (b.d.). https://hiiker.app (dostęp 06.05.2026).
+Komoot, (b.d.). https://www.komoot.com/pl-pl (dostęp 06.05.2026).
+Strava, (b.d.). https://www.strava.com (dostęp 27.05.2026).
+Raporty
+TPN, (2026). Statystyki wejść do TPN za lata 2025-2020. https://tpn.gov.pl/pliki-do-pobrania/otworz/0a6cc2f2-09c2-4420-a950-db728236b09d.pdf (dostęp: 11.03.2026).
+Spis rysunków
+Rysunek 1. Hierarchia potrzeb według Maslowa11
+Rysunek 2. Liczba turystów odwiedzających TPN w latach 2020–202513
+Rysunek 3. Schemat działania wzorca MVC25
+Rysunek 4. Diagram przepływu danych poziomu 0 (kontekstowy)29
+Rysunek 5. Diagram przepływu danych poziomu 130
+Rysunek 6. Schemat relacyjnej bazy danych systemu – diagram ERD31
+
+Spis tabel
+Tabela 1 Ocena funkcjonalności aplikacji18

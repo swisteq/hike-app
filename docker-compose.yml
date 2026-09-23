@@ -19,7 +19,7 @@ services:
       retries: 5
 
   app:
-    build: .
+    build: ./gorskie-wyprawy-backend
     container_name: gorskie-app
     depends_on:
       postgres:
@@ -34,6 +34,18 @@ services:
     volumes:
       - gpx_uploads:/app/uploads
 
+  frontend:
+    build: ./gorskie-wyprawy-frontend
+    container_name: gorskie-frontend
+    depends_on:
+      - app
+    ports:
+      - "3000:80"
+
 volumes:
   postgres_data:
+    external: true
+    name: gorskie-wyprawy-faza1_postgres_data
   gpx_uploads:
+    external: true
+    name: gorskie-wyprawy-backend_gpx_uploads
